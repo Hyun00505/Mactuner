@@ -1,12 +1,4 @@
-"""API router modules for the MacTuner backend."""
+"""MacTuner API 모듈"""
+from backend.api import model_loader
 
-from . import chat_interface, dataset_tools, export_gguf, model_loader, rag_pipeline, training
-
-__all__ = [
-    "chat_interface",
-    "dataset_tools",
-    "export_gguf",
-    "model_loader",
-    "rag_pipeline",
-    "training",
-]
+__all__ = ["model_loader"]

@@ -1,0 +1,70 @@
+{
+  "editor.fontFamily": "D2Coding ,Consolas, 'Courier New', monospace",
+  "workbench.colorTheme": "Default Light Modern",
+  "editor.inlineSuggest.enabled": false,
+  "cursor.autocomplete.enable": false,
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": false
+  },
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.acceptSuggestionOnCommitCharacter": true,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.tabCompletion": "on",
+  "editor.wordBasedSuggestions": "on",
+  "editor.parameterHints.enabled": true,
+  "editor.hover.enabled": true,
+  "emmet.triggerExpansionOnTab": true,
+  "emmet.includeLanguages": {
+    "html": "html"
+  },
+  "html.suggest.html5": true,
+  "html.autoClosingTags": true,
+  "html.autoCreateQuotes": true,
+  "html.validate.scripts": true,
+  "html.validate.styles": true,
+  "emmet.useInlineCompletions": true,
+  "emmet.showSuggestionsAsSnippets": true,
+  "workbench.sideBar.location": "right",
+
+  //강사님 세팅
+  "terminal.integrated.defaultProfile.windows": "Git Bash", // 기본 터미널 설정
+  "editor.mouseWheelZoom": true, // Zoom 설정 : Ctrl + 마우스 휠
+  "window.zoomLevel": 1, // 기본 줌 레벨 2
+  "workbench.iconTheme": "vscode-icons", // 아이콘 테마
+
+  "security.workspace.trust.untrustedFiles": "open", // 기본 파일 바로 열람
+  "files.autoSave": "afterDelay", // 수정 시 자동 저장
+  "files.autoSaveDelay": 2000, // 수정 시 자동 저장시간 설정 (2초)
+
+  "editor.minimap.enabled": false, // 미니맵 비활성화
+  "explorer.confirmDelete": false, // 파일 삭제 시, 추가 확인하지 않음
+  "files.enableTrash": true, // 파일 삭제 시, 쓰레기통으로 이동
+
+  // python 설정
+  "python.analysis.autoImportCompletions": true, // 자동완성 활성화
+
+  // Django
+  "files.associations": {
+    "**/*.html": "html",
+    "**/templates/**/*.html": "django-html",
+    "**/templates/**/*": "django-txt",
+    "**/requirements{/**,*}.{txt,in}": "pip-requirements"
+  },
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  },
+  "[django-html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "junstyle.vscode-django-support"
+  },
+  // formatter(prettier) 설정
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "prettier.htmlWhitespaceSensitivity": "ignore",
+  "prettier.printWidth": 200,
+  "cursorpyright.analysis.autoImportCompletions": true,
+  "java.debug.settings.onBuildFailureProceed": true,
+  "java.compile.nullAnalysis.mode": "automatic"
+}
