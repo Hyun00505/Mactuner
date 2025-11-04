@@ -8,23 +8,18 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 try:
-    # Running the backend from the project root makes `model_loader` importable.
-    # If the backend is executed as a package (e.g. `uvicorn backend.main:app`),
-    # ensure the project root is on ``PYTHONPATH``.
     from model_loader import load_model
-except ModuleNotFoundError as exc:  # pragma: no cover - defensive guard
+except ModuleNotFoundError as exc:
     raise RuntimeError(
         "model_loader module could not be imported. "
         "Ensure the project root is on PYTHONPATH."
     ) from exc
-
 
 router = APIRouter(tags=["model"])
 
 
 class ModelLoadRequest(BaseModel):
     """Request payload for loading a model."""
-
     model_source: Literal["hub", "local"] = Field(
         ..., description="Whether to pull the model from the Hugging Face hub or local path"
     )
@@ -34,7 +29,6 @@ class ModelLoadRequest(BaseModel):
 
 class ModelLoadResponse(BaseModel):
     """Successful load response payload."""
-
     status: str
     metadata: Dict[str, object]
 
@@ -45,24 +39,21 @@ _MODEL_CACHE: Dict[str, object] = {}
 @router.get("/health")
 def model_health() -> Dict[str, str]:
     """Simple health endpoint for the model loader routes."""
-
     return {"status": "ok"}
 
 
 @router.post("/load", response_model=ModelLoadResponse)
 def load_model_endpoint(payload: ModelLoadRequest) -> ModelLoadResponse:
     """Load a model/tokenizer pair and return metadata for the client."""
-
     try:
         model, tokenizer, metadata = load_model(
             payload.model_source,
             payload.model_id_or_path,
             payload.access_token,
         )
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    # Cache the latest loaded artifacts for downstream endpoints to reuse.
     _MODEL_CACHE.update({
         "model": model,
         "tokenizer": tokenizer,
@@ -76,7 +67,6 @@ def load_model_endpoint(payload: ModelLoadRequest) -> ModelLoadResponse:
 
 def get_cached_model() -> Dict[str, object]:
     """Expose cached model artifacts to other routers."""
-
     if not _MODEL_CACHE:
         raise RuntimeError("No model is currently loaded. Call /model/load first.")
     return _MODEL_CACHE
