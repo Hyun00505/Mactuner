@@ -76,3 +76,16 @@ export interface UIState {
   isTraining: boolean;
   showNodePalette: boolean;
 }
+
+// Electron API 타입
+export interface ElectronAPI {
+  selectFile: (filters?: Array<{ name: string; extensions: string[] }>) => Promise<string | null>;
+  selectFolder: () => Promise<string | null>;
+  selectFiles: (filters?: Array<{ name: string; extensions: string[] }>) => Promise<string[]>;
+}
+
+declare global {
+  interface Window {
+    electronAPI?: ElectronAPI;
+  }
+}

@@ -107,6 +107,9 @@ class ChatService:
 
             # 프롬프트 부분 제거
             response_text = generated_text[len(prompt) :].strip()
+            
+            # 응답 정리
+            response_text = self._cleanup_response(response_text)
 
             return {
                 "status": "success",
@@ -179,16 +182,87 @@ class ChatService:
         if not use_history or len(self.conversation_history) == 0:
             return self.system_prompt
 
+        # 명확한 프롬프트 형식
         context = f"{self.system_prompt}\n\n"
-
-        # 최근 5개 메시지까지만 포함 (토큰 절약)
-        recent_history = self.conversation_history[-5:]
-        for message in recent_history:
-            role = "User" if message.role == "user" else "Assistant"
-            context += f"{role}: {message.content}\n"
-
-        context += "Assistant:"
+        context += "### Conversation History\n"
+        
+        # 최근 10개 메시지까지만 포함 (더 많은 컨텍스트)
+        recent_history = self.conversation_history[-10:]
+        
+        for i, message in enumerate(recent_history):
+            if message.role == "user":
+                context += f"User: {message.content}\n"
+            else:
+                context += f"Assistant: {message.content}\n"
+        
+        # 명확한 구분자로 새로운 응답 요청
+        context += "\n### Current Response\nAssistant:"
         return context
+
+    def _cleanup_response(self, response: str) -> str:
+        """응답 정리 - 반복 제거 및 포맷팅"""
+        if not response:
+            return response
+        
+        # 1. 기본 정리
+        response = response.strip()
+        
+        # 2. "User:" 또는 "Assistant:" 포함된 부분은 제거 (프롬프트 누출 방지)
+        lines = response.split('\n')
+        result_lines = []
+        for line in lines:
+            line = line.strip()
+            # 프롬프트 구조 제거
+            if line.startswith(('User:', 'Assistant:', 'A:', 'U:', '###', 'Assistant')):
+                continue
+            if not line:
+                continue
+            result_lines.append(line)
+        
+        # 3. 반복 제거 (더 정교한 감지)
+        final_lines = []
+        for line in result_lines:
+            # 이미 있는 문장과 정확히 같은지 확인
+            if line in final_lines:
+                continue
+            
+            # 유사한 문장 제거 (단어 유사도)
+            is_repetitive = False
+            if len(final_lines) >= 1:
+                # 마지막 문장과 비교
+                last_line = final_lines[-1]
+                # 50% 이상 단어가 겹치면 반복으로 판단
+                last_words = set(last_line.lower().split())
+                current_words = set(line.lower().split())
+                if len(last_words) > 0 and len(current_words) > 0:
+                    overlap = len(last_words & current_words) / max(len(last_words), len(current_words))
+                    if overlap > 0.5:
+                        is_repetitive = True
+            
+            if not is_repetitive:
+                final_lines.append(line)
+        
+        # 4. 첫 2줄만 사용 (더 짧게)
+        if len(final_lines) > 2:
+            final_lines = final_lines[:2]
+        
+        # 5. 결과 생성
+        result = ' '.join(final_lines)
+        
+        # 6. 한글 문장 길이 제한 (너무 길면 끝내기)
+        if len(result) > 200:  # 약 100자 한글
+            result = result[:200] + '...'
+        
+        # 7. 마침표 추가
+        if result and not result.endswith(('。', '。', '.', '!', '?', '?', '!', '...', '…')):
+            # 한글인 경우 마침표 추가
+            if any('\uac00' <= char <= '\ud7a3' for char in result):
+                if not result.endswith(('다', '요', '가', '네')):
+                    result += '다'
+            else:
+                result += '.'
+        
+        return result
 
     # ========================================
     # 대화 히스토리

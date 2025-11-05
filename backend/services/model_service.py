@@ -176,6 +176,71 @@ class ModelService:
             import logging
             logging.error(f"Error scanning models: {str(e)}")
 
+        # 프로젝트 루트의 models/ 폴더도 함께 확인
+        try:
+            project_root = Path(__file__).parent.parent.parent  # backend/services/../.. = project root
+            models_folder = project_root / "models"
+            
+            if models_folder.exists():
+                for item in models_folder.iterdir():
+                    if item.name.startswith("."):
+                        continue
+                    
+                    # GGUF 파일 확인 (루트 레벨)
+                    if item.is_file() and item.suffix.lower() == ".gguf":
+                        model_id = item.stem
+                        # 중복 확인
+                        if not any(m.get("model_id") == model_id for m in models):
+                            models.append({
+                                "path": str(item.absolute()),
+                                "model_id": model_id,
+                                "namespace": "local",
+                                "source": "local_folder",
+                                "size_gb": round(item.stat().st_size / (1024 ** 3), 2),
+                                "model_type": "GGUF",
+                            })
+                    
+                    # HuggingFace 폴더 확인 (config.json이 있는 경우)
+                    elif item.is_dir() and (item / "config.json").exists():
+                        model_id = item.name
+                        # 중복 확인
+                        if not any(m.get("model_id") == model_id for m in models):
+                            models.append({
+                                "path": str(item.absolute()),
+                                "model_id": model_id,
+                                "namespace": "local",
+                                "source": "local_folder",
+                                "size_gb": self._get_dir_size_gb(item),
+                                "config_present": True,
+                                "model_present": (item / "pytorch_model.bin").exists() or 
+                                                (item / "model.safetensors").exists() or
+                                                any(item.glob("model-*.safetensors")),
+                                "tokenizer_present": (item / "tokenizer.json").exists() or 
+                                                    (item / "tokenizer.model").exists(),
+                                "model_type": "HuggingFace",
+                            })
+                    
+                    # GGUF 폴더 확인 (폴더 안에 GGUF 파일이 있는 경우)
+                    elif item.is_dir():
+                        gguf_files = list(item.glob("*.gguf"))
+                        if gguf_files:
+                            # 가장 큰 GGUF 파일을 선택
+                            largest_gguf = max(gguf_files, key=lambda f: f.stat().st_size)
+                            model_id = item.name
+                            # 중복 확인
+                            if not any(m.get("model_id") == model_id for m in models):
+                                models.append({
+                                    "path": str(largest_gguf.absolute()),
+                                    "model_id": model_id,
+                                    "namespace": "local",
+                                    "source": "local_folder",
+                                    "size_gb": round(largest_gguf.stat().st_size / (1024 ** 3), 2),
+                                    "model_type": "GGUF",
+                                })
+        except Exception as e:
+            import logging
+            logging.error(f"Error scanning project models folder: {str(e)}")
+
         return sorted(models, key=lambda x: x.get("size_gb", 0), reverse=True)
 
     def _extract_hf_model_data(self, model_dir: Path) -> Optional[dict]:

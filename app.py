@@ -40,19 +40,26 @@ def start_backend():
     """백엔드 서비스 시작"""
     print("🔧 백엔드 시작 중... (포트 8001)")
     
-    # 가상환경 경로
-    venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
-    
-    if not venv_python.exists():
-        print("❌ 가상환경을 찾을 수 없습니다.")
-        print("   다음 명령을 실행하세요:")
-        print("   python3 -m venv .venv")
-        print("   source .venv/bin/activate")
-        print("   pip install -r backend/requirements.txt")
-        sys.exit(1)
+    # Conda 환경 확인
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    if conda_prefix:
+        print(f"✅ Conda 환경 감지: {conda_prefix}")
+        # Conda 환경에서 python 명령 사용
+        python_cmd = "python"
+    else:
+        # 가상환경 경로
+        venv_python = PROJECT_ROOT / ".venv" / "bin" / "python"
+        
+        if not venv_python.exists():
+            print("❌ 가상환경을 찾을 수 없습니다.")
+            print("   Conda 환경을 활성화하세요:")
+            print("   conda activate MACtuner")
+            print("   python app.py")
+            sys.exit(1)
+        python_cmd = str(venv_python)
     
     cmd = [
-        str(venv_python),
+        python_cmd,
         "-m",
         "uvicorn",
         "backend.main:app",
@@ -66,12 +73,32 @@ def start_backend():
             cmd,
             cwd=PROJECT_ROOT,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.PIPE,
             text=True,
             bufsize=1
         )
         processes.append(proc)
         print("✅ 백엔드 시작됨")
+        
+        # 백엔드 출력 모니터링 (별도 스레드)
+        import threading
+        def read_backend_output():
+            while True:
+                line = proc.stdout.readline()
+                if not line:
+                    break
+                print(f"[백엔드] {line.rstrip()}")
+        
+        def read_backend_error():
+            while True:
+                line = proc.stderr.readline()
+                if not line:
+                    break
+                print(f"[백엔드 에러] {line.rstrip()}")
+        
+        threading.Thread(target=read_backend_output, daemon=True).start()
+        threading.Thread(target=read_backend_error, daemon=True).start()
+        
         return proc
     except Exception as e:
         print(f"❌ 백엔드 시작 실패: {e}")

@@ -19,7 +19,9 @@ class InitializeChatRequest(BaseModel):
     """Chat 초기화 요청"""
 
     system_prompt: str = Field(
-        "You are a helpful AI assistant.",
+        "You are a helpful, friendly AI assistant. Keep your responses concise and natural. "
+        "Remember information from the conversation. Do not repeat yourself. "
+        "Provide direct, useful answers without unnecessary elaboration.",
         description="System prompt for the chat",
     )
 
@@ -107,6 +109,56 @@ async def initialize_chat(request: InitializeChatRequest) -> Dict:
 async def chat(request: ChatRequest) -> Dict:
     """사용자 메시지에 응답"""
     try:
+        # 모델이 초기화되지 않았으면 캐시에서 로드
+        if chat_service.model is None or chat_service.tokenizer is None:
+            try:
+                model_cache = get_cached_model()
+                is_gguf = model_cache.get("is_gguf", False)
+                
+                if is_gguf:
+                    # GGUF 모델 (llama.cpp)
+                    llama_service = model_cache["model"]
+                    result = llama_service.chat(
+                        user_message=request.message,
+                        system_prompt=chat_service.system_prompt if hasattr(chat_service, 'system_prompt') else None,
+                        max_tokens=request.max_length,
+                        temperature=request.temperature,
+                        top_p=request.top_p,
+                        top_k=request.top_k,
+                        maintain_history=request.maintain_history,
+                    )
+                    return {"status": "success", "data": result}
+                else:
+                    # 일반 모델 (Transformers)
+                    model = model_cache["model"]
+                    tokenizer = model_cache["tokenizer"]
+                    
+                    # Chat 서비스 초기화
+                    chat_service.initialize_from_model(
+                        model=model,
+                        tokenizer=tokenizer,
+                        system_prompt=chat_service.system_prompt,
+                    )
+            except Exception as init_error:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"모델 초기화 실패: {str(init_error)}"
+                )
+        
+        # GGUF 모델인 경우
+        if hasattr(chat_service, 'model') and str(type(chat_service.model)).find('LlamaCppService') != -1:
+            result = chat_service.model.chat(
+                user_message=request.message,
+                system_prompt=chat_service.system_prompt if hasattr(chat_service, 'system_prompt') else None,
+                max_tokens=request.max_length,
+                temperature=request.temperature,
+                top_p=request.top_p,
+                top_k=request.top_k,
+                maintain_history=request.maintain_history,
+            )
+            return {"status": "success", "data": result}
+        
+        # 일반 모델인 경우
         result = chat_service.chat(
             user_message=request.message,
             max_length=request.max_length,

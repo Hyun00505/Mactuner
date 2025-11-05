@@ -17,6 +17,7 @@ export const modelAPI = {
   info: (model_id: string) => api.get(`/model/info/${model_id}`),
   current: () => api.get('/model/current'),
   listLocal: () => api.get('/model/local-models'),
+  scanFolderModels: () => api.get('/model/folder-models'),
 };
 
 export const datasetAPI = {

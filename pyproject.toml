@@ -34,7 +34,6 @@ dependencies = [
     "transformers>=4.36.0",
     "peft>=0.7.0",
     "datasets>=2.14.0",
-    "bitsandbytes>=0.41.0",
     
     # Data Processing
     "pandas>=2.0.0",
@@ -45,9 +44,6 @@ dependencies = [
     "faiss-cpu>=1.7.4",
     "sentence-transformers>=2.2.2",
     "pymupdf>=1.23.0",
-    
-    # GGUF Conversion
-    "llama-cpp-python>=0.2.0",
     
     # Utilities
     "python-dotenv>=1.0.0",
@@ -72,6 +68,9 @@ test = [
     "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.21.0",
 ]
+
+[tool.setuptools]
+packages = ["backend"]
 
 [tool.uv]
 dev-dependencies = [
