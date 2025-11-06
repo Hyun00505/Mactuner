@@ -19,9 +19,8 @@ class InitializeChatRequest(BaseModel):
     """Chat 초기화 요청"""
 
     system_prompt: str = Field(
-        "You are a helpful, friendly AI assistant. Keep your responses concise and natural. "
-        "Remember information from the conversation. Do not repeat yourself. "
-        "Provide direct, useful answers without unnecessary elaboration.",
+        "You are a helpful AI assistant. Answer questions clearly and concisely. "
+        "Remember what the user told you. Be friendly and natural. Do not repeat yourself.",
         description="System prompt for the chat",
     )
 
@@ -35,6 +34,9 @@ class ChatRequest(BaseModel):
     top_p: float = Field(0.9, ge=0.0, le=1.0, description="Top-p sampling")
     top_k: int = Field(50, ge=0, le=100, description="Top-k sampling")
     maintain_history: bool = Field(True, description="Maintain conversation history")
+    max_tokens: int = Field(1024, ge=128, le=4096, description="Max tokens to generate")
+    repeat_penalty: float = Field(1.1, ge=0.0, le=2.0, description="Repeat penalty")
+    n_gpu_layers: int = Field(35, ge=0, le=100, description="GPU layers for GGUF models")
 
 
 class GenerateRequest(BaseModel):
@@ -121,7 +123,7 @@ async def chat(request: ChatRequest) -> Dict:
                     result = llama_service.chat(
                         user_message=request.message,
                         system_prompt=chat_service.system_prompt if hasattr(chat_service, 'system_prompt') else None,
-                        max_tokens=request.max_length,
+                        max_tokens=request.max_tokens,
                         temperature=request.temperature,
                         top_p=request.top_p,
                         top_k=request.top_k,
@@ -150,11 +152,13 @@ async def chat(request: ChatRequest) -> Dict:
             result = chat_service.model.chat(
                 user_message=request.message,
                 system_prompt=chat_service.system_prompt if hasattr(chat_service, 'system_prompt') else None,
-                max_tokens=request.max_length,
+                max_tokens=request.max_tokens,
                 temperature=request.temperature,
                 top_p=request.top_p,
                 top_k=request.top_k,
                 maintain_history=request.maintain_history,
+                repeat_penalty=request.repeat_penalty,
+                n_gpu_layers=request.n_gpu_layers,
             )
             return {"status": "success", "data": result}
         

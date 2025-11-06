@@ -1,0 +1,39 @@
+[
+  {
+    "id": 3,
+    "source": "hf",
+    "filename": "korean_rlhf_dataset.parquet",
+    "rows": 107172,
+    "columns": 3,
+    "size_mb": 0.0,
+    "format": "HuggingFace Dataset",
+    "timestamp": "2025-11-06T17:09:18.644658",
+    "hf_dataset_id": "jojo0217/korean_rlhf_dataset",
+    "hf_token": "",
+    "hf_split": "train",
+    "encoding": "utf-8"
+  },
+  {
+    "id": 2,
+    "source": "hf",
+    "filename": "Korean_dialog.parquet",
+    "rows": 4397,
+    "columns": 3,
+    "size_mb": 0.0,
+    "format": "HuggingFace Dataset",
+    "timestamp": "2025-11-06T17:07:24.553182",
+    "hf_dataset_id": "jungsungmoon/Korean_dialog",
+    "hf_token": "",
+    "hf_split": "train"
+  },
+  {
+    "id": 1,
+    "source": "file",
+    "filename": "test.csv",
+    "rows": 3887,
+    "columns": 7,
+    "size_mb": 0.5598430633544922,
+    "format": "CSV",
+    "timestamp": "2025-11-06T17:04:28.438735"
+  }
+]

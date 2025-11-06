@@ -19,7 +19,7 @@ class LlamaCppService:
         self.llm: Optional[Llama] = None
         self.model_path: Optional[str] = None
         self.conversation_history: list = []
-        self.system_prompt = "You are a helpful AI assistant."
+        self.system_prompt = ""  # Llama 모델용 빈 시스템 프롬프트
 
     @staticmethod
     def is_gguf_model(model_path: str) -> bool:
@@ -92,6 +92,7 @@ class LlamaCppService:
         temperature: float = 0.7,
         top_p: float = 0.9,
         top_k: int = 50,
+        repeat_penalty: float = 1.1,
     ) -> Dict[str, Any]:
         """텍스트 생성"""
         try:
@@ -107,6 +108,7 @@ class LlamaCppService:
                 temperature=temperature,
                 top_p=top_p,
                 top_k=top_k,
+                repeat_penalty=repeat_penalty,
                 echo=False,
             )
 
@@ -129,11 +131,13 @@ class LlamaCppService:
         self,
         user_message: str,
         system_prompt: Optional[str] = None,
-        max_tokens: int = 512,
+        max_tokens: int = 1024,
         temperature: float = 0.7,
         top_p: float = 0.9,
         top_k: int = 50,
         maintain_history: bool = True,
+        repeat_penalty: float = 1.1,
+        n_gpu_layers: Optional[int] = None,
     ) -> Dict[str, Any]:
         """채팅 응답"""
         try:
@@ -152,18 +156,41 @@ class LlamaCppService:
             else:
                 context = self._build_context(user_message)
 
-            # 응답 생성
-            response = self.llm(
-                context,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                top_k=top_k,
-                echo=False,
-                stop=["User:", "Assistant:", "\n\n"],
-            )
+            # 응답 생성 - max_tokens를 늘려서 완전한 응답을 얻도록
+            try:
+                response = self.llm(
+                    context,
+                    max_tokens=max(max_tokens, 512),  # 최소 512 토큰
+                    temperature=temperature,
+                    top_p=top_p,
+                    top_k=top_k,
+                    repeat_penalty=repeat_penalty,
+                    echo=False,
+                    stop=["User:", "\n\nUser:"],  # 더 명확한 stop token
+                )
+            except Exception as e:
+                # Context window 초과 시 더 짧은 히스토리로 재시도
+                if "exceed context window" in str(e):
+                    logger.warning(f"Context window exceeded, retrying with shorter history: {e}")
+                    self.conversation_history = self.conversation_history[-6:]  # 최근 3개 왕복만
+                    context = self._build_context_with_history(user_message)
+                    response = self.llm(
+                        context,
+                        max_tokens=max(max_tokens, 512),
+                        temperature=temperature,
+                        top_p=top_p,
+                        top_k=top_k,
+                        repeat_penalty=repeat_penalty,
+                        echo=False,
+                        stop=["User:", "\n\nUser:"],
+                    )
+                else:
+                    raise
 
             text = response["choices"][0]["text"].strip()
+            
+            # 응답 정리 - 불완전한 문장 제거
+            text = self._cleanup_response(text)
 
             # 히스토리 유지
             if maintain_history:
@@ -188,25 +215,55 @@ class LlamaCppService:
                 "status": "error",
                 "message": f"Chat failed: {str(e)}",
             }
+    
+    def _cleanup_response(self, text: str) -> str:
+        """응답 정리 - 불완전한 코드나 문장 제거"""
+        if not text or not text.strip():
+            return "I'm unable to generate a response. Please try again with different parameters or a simpler prompt."
+        
+        # 줄 단위로 분할
+        lines = text.split('\n')
+        
+        # 선행/후행 공백 제거, 빈 줄은 유지 (마크다운 포맷을 위해)
+        lines = [line.rstrip() for line in lines]
+        
+        # 응답이 너무 짧으면 반환
+        if len('\n'.join(lines).strip()) < 3:
+            return "I'm unable to generate a meaningful response. Please try again."
+        
+        # 코드 블록 완성도 확인
+        code_fence_count = sum(line.count('```') for line in lines)
+        
+        # 코드 블록이 홀수개면 닫기 추가
+        if code_fence_count % 2 == 1:
+            lines.append('```')
+        
+        result = '\n'.join(lines).strip()
+        return result if result else "I'm unable to generate a response. Please try again."
 
     def _build_context(self, user_message: str) -> str:
         """컨텍스트 구축 (히스토리 없이)"""
-        prompt = f"{self.system_prompt}\n\n"
-        prompt += f"User: {user_message}\n"
-        prompt += "Assistant:"
+        if self.system_prompt:
+            prompt = f"{self.system_prompt}\n\n"
+        else:
+            prompt = ""
+        prompt += f"User: {user_message}\nAssistant:"
         return prompt
 
     def _build_context_with_history(self, user_message: str) -> str:
         """컨텍스트 구축 (히스토리 포함)"""
-        prompt = f"{self.system_prompt}\n\n"
-
-        # 최근 대화 추가
-        for msg in self.conversation_history:
+        prompt = ""
+        
+        if self.system_prompt:
+            prompt = f"{self.system_prompt}\n\n"
+        
+        # 최근 대화 추가 (최대 5개 왕복)
+        recent_history = self.conversation_history[-10:] if len(self.conversation_history) > 10 else self.conversation_history
+        for msg in recent_history:
             role = "User" if msg["role"] == "user" else "Assistant"
             prompt += f"{role}: {msg['content']}\n"
-
-        prompt += f"User: {user_message}\n"
-        prompt += "Assistant:"
+        
+        prompt += f"User: {user_message}\nAssistant:"
         return prompt
 
     def clear_history(self) -> Dict[str, str]:

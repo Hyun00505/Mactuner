@@ -280,6 +280,8 @@ async def upload_model_stream(request_body: dict):
                         "status": "completed",
                         "progress": 100,
                         "message": "✅ GGUF 모델 로드 완료!",
+                        "is_gguf": True,
+                        "model_size": os.path.getsize(model_path) / (1024**3),  # GB 단위로 변환
                         "metadata": {
                             "model_type": "GGUF",
                             "framework": "llama.cpp",
@@ -318,6 +320,12 @@ async def upload_model_stream(request_body: dict):
                     "status": "completed",
                     "progress": 100,
                     "message": f"✅ 모델 로드 완료!",
+                    "is_gguf": False,
+                    "model_size": os.path.getsize(model_path) / (1024**3) if os.path.isfile(model_path) else sum(
+                        os.path.getsize(os.path.join(dirpath, filename))
+                        for dirpath, dirnames, filenames in os.walk(model_path)
+                        for filename in filenames
+                    ) / (1024**3),
                     "metadata": metadata
                 }).encode() + b'\n'
             

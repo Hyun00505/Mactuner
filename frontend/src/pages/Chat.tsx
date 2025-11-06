@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { chatAPI } from "../utils/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   id: string;
@@ -24,6 +26,8 @@ export const Chat: React.FC = () => {
   const [topP, setTopP] = useState(0.9);
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
+  const [isGgufModel, setIsGgufModel] = useState(false);
+  const [modelSizeGb, setModelSizeGb] = useState(0);
   const [loadingModels, setLoadingModels] = useState(false);
   const [modelLoading, setModelLoading] = useState<string | null>(null);
   const [currentModelName, setCurrentModelName] = useState<string>("");
@@ -34,7 +38,10 @@ export const Chat: React.FC = () => {
   );
   const [showPromptEditor, setShowPromptEditor] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [maxResponseLength, setMaxResponseLength] = useState(5000);
+  const [maxResponseLength, setMaxResponseLength] = useState(8000);
+  const [maxTokens, setMaxTokens] = useState(1024);
+  const [nGpuLayers, setNGpuLayers] = useState(35);
+  const [repeatPenalty, setRepeatPenalty] = useState(1.1);
   const [debugMode, setDebugMode] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const [showParameters, setShowParameters] = useState(false);
@@ -48,6 +55,25 @@ export const Chat: React.FC = () => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // GPU layers 자동 추천 함수
+  const calculateRecommendedGpuLayers = (modelSizeGb: number): number => {
+    // Mac의 메모리 제약을 고려한 추천값
+    // Q4 양자화 기준 (약 1GB ≈ 1-2 layers)
+    if (modelSizeGb <= 1) {
+      return 50; // 1B 모델 - 거의 모든 layer GPU에서 실행
+    } else if (modelSizeGb <= 3) {
+      return 40; // 3B 모델
+    } else if (modelSizeGb <= 7) {
+      return 30; // 7B 모델
+    } else if (modelSizeGb <= 13) {
+      return 20; // 13B 모델
+    } else if (modelSizeGb <= 33) {
+      return 10; // 33B 모델
+    } else {
+      return 5; // 70B 이상 - 제한적
+    }
   };
 
   useEffect(() => {
@@ -65,6 +91,10 @@ export const Chat: React.FC = () => {
     const savedWidth = localStorage.getItem("settingsPanelWidth");
     const savedNames = localStorage.getItem("modelCustomNames");
     const savedLocalModels = localStorage.getItem("localModels");
+    const savedMaxTokens = localStorage.getItem("maxTokens");
+    const savedMaxResponseLength = localStorage.getItem("maxResponseLength");
+    const savedNGpuLayers = localStorage.getItem("nGpuLayers");
+    const savedRepeatPenalty = localStorage.getItem("repeatPenalty");
 
     if (savedModel) setSelectedModel(savedModel);
     if (savedWidth) setSettingsPanelWidth(parseInt(savedWidth));
@@ -82,6 +112,10 @@ export const Chat: React.FC = () => {
         console.error("Failed to parse saved local models:", e);
       }
     }
+    if (savedMaxTokens) setMaxTokens(parseInt(savedMaxTokens));
+    if (savedMaxResponseLength) setMaxResponseLength(parseInt(savedMaxResponseLength));
+    if (savedNGpuLayers) setNGpuLayers(parseInt(savedNGpuLayers));
+    if (savedRepeatPenalty) setRepeatPenalty(parseFloat(savedRepeatPenalty));
   }, []);
 
   // 모델 선택 저장
@@ -98,6 +132,26 @@ export const Chat: React.FC = () => {
   useEffect(() => {
     localStorage.setItem("modelCustomNames", JSON.stringify(modelCustomNames));
   }, [modelCustomNames]);
+
+  // Max Tokens 저장
+  useEffect(() => {
+    localStorage.setItem("maxTokens", maxTokens.toString());
+  }, [maxTokens]);
+
+  // Max Response Length 저장
+  useEffect(() => {
+    localStorage.setItem("maxResponseLength", maxResponseLength.toString());
+  }, [maxResponseLength]);
+
+  // N GPU Layers 저장
+  useEffect(() => {
+    localStorage.setItem("nGpuLayers", nGpuLayers.toString());
+  }, [nGpuLayers]);
+
+  // Repeat Penalty 저장
+  useEffect(() => {
+    localStorage.setItem("repeatPenalty", repeatPenalty.toString());
+  }, [repeatPenalty]);
 
   // 리사이즈 핸들러
   const handleMouseDown = () => {
@@ -196,13 +250,31 @@ export const Chat: React.FC = () => {
                 setSelectedModel(modelId);
                 setCurrentModelName(modelId);
 
+                // GGUF 모델 여부 저장
+                if (data.is_gguf !== undefined) {
+                  setIsGgufModel(data.is_gguf);
+                }
+
+                // 모델 크기 저장 및 GPU layers 자동 계산
+                if (data.model_size !== undefined) {
+                  setModelSizeGb(data.model_size);
+
+                  // GPU layers 자동 추천 계산 (모델 크기 기반)
+                  // Mac의 경우 메모리 제한을 고려한 추천값
+                  const recommendedLayers = calculateRecommendedGpuLayers(data.model_size);
+                  setNGpuLayers(recommendedLayers);
+                }
+
                 // Chat 초기화
                 try {
-                  await fetch("http://localhost:8001/chat/initialize", {
+                  const initResponse = await fetch("http://localhost:8001/chat/initialize", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ system_prompt: systemPrompt }),
                   });
+                  if (!initResponse.ok) {
+                    console.warn("Chat initialization returned:", initResponse.status);
+                  }
                 } catch (err) {
                   console.error("Chat initialization failed:", err);
                 }
@@ -270,7 +342,7 @@ export const Chat: React.FC = () => {
 
     try {
       console.log("Sending message:", input);
-      const response = await chatAPI.chat(input, topP, temperature);
+      const response = await chatAPI.chat(input, topP, temperature, maxTokens, repeatPenalty, nGpuLayers);
       console.log("Chat API Response:", response);
 
       // 응답 처리 (여러 형식 지원)
@@ -294,16 +366,19 @@ export const Chat: React.FC = () => {
 
       // 디버그 정보 생성 및 저장
       const debugInfoStr = `Request Parameters:
-  • Temperature: ${temperature.toFixed(2)}
-  • Top P: ${topP.toFixed(2)}
-  • Max Length: ${maxResponseLength}
-  • Model: ${selectedModel}
+  • Temperature: ${temperature.toFixed(2)} (creativity: 0=deterministic, 2=creative)
+  • Top P: ${topP.toFixed(2)} (diversity: 0=focused, 1=diverse)
+  • Max Tokens: ${maxTokens} (max response length in tokens)
+  • Repeat Penalty: ${repeatPenalty.toFixed(2)} (avoid repetition: 1.0=none, 2.0=strong)
+  ${isGgufModel ? `• GPU Layers: ${nGpuLayers} (Metal GPU acceleration)` : ""}
+  • Model: ${selectedModel} ${isGgufModel ? "(GGUF)" : "(HuggingFace)"}
 
 Response Details:
   • Characters: ${responseText.length} / ${maxResponseLength}
   • Lines: ${responseText.split("\n").length}
   • Words: ${responseText.split(/\s+/).length}
   • Estimated Tokens: ~${Math.ceil(responseText.split(/\s+/).length * 1.3)}
+  • Empty Response: ${responseText.trim().length === 0 ? "YES ⚠️" : "No ✓"}
   • Timestamp: ${new Date().toLocaleTimeString()}`;
 
       setDebugInfo(debugInfoStr);
@@ -385,7 +460,9 @@ Response Details:
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.sender === "user" ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-100"}`}>
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <div className="markdown-content">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                      </div>
                       <p className={`text-xs mt-1 ${msg.sender === "user" ? "text-blue-100" : "text-gray-400"}`}>{msg.timestamp}</p>
                     </div>
                   </div>
@@ -526,10 +603,35 @@ Response Details:
                   />
                 </div>
 
+                {/* Max Tokens */}
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <label className="text-sm font-bold text-white block mb-2">
+                    Max Tokens: <span className="text-green-400">{maxTokens}</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input type="range" min="256" max="8192" step="256" value={maxTokens} onChange={(e) => setMaxTokens(parseInt(e.target.value))} className="flex-1" disabled={!selectedModel} />
+                    <input
+                      type="number"
+                      min="256"
+                      max="8192"
+                      step="256"
+                      value={maxTokens}
+                      onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                      className="w-20 bg-gray-600 text-white px-2 py-1 rounded border border-gray-500 focus:outline-none focus:border-green-500 text-sm"
+                      disabled={!selectedModel}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>256</span>
+                    <span>8192</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">💡 더 높은 값 = 더 길고 상세한 응답 (생성 시간 증가, 메모리 사용 증가)</p>
+                </div>
+
                 {/* Max Length */}
                 <div className="bg-gray-700 rounded-lg p-3">
                   <label className="text-sm font-bold text-white block mb-2">
-                    Max Length: <span className="text-blue-400">{maxResponseLength}</span>
+                    Max Response Length: <span className="text-blue-400">{maxResponseLength}</span>
                   </label>
                   <input
                     type="number"
@@ -541,7 +643,29 @@ Response Details:
                     className="w-full bg-gray-600 text-white px-2 py-1 rounded border border-gray-500 focus:outline-none focus:border-blue-500 text-sm"
                     disabled={!selectedModel}
                   />
+                  <p className="text-xs text-gray-400 mt-1">응답을 UI에 표시할 때의 최대 길이</p>
                 </div>
+
+                {/* N GPU Layers (GGUF만) */}
+                {isGgufModel && (
+                  <div className="bg-gray-700 rounded-lg p-3 border border-green-500">
+                    <label className="text-sm font-bold text-white block mb-2">
+                      🎮 GPU Layers (GGUF): <span className="text-green-400">{nGpuLayers}</span>
+                      {modelSizeGb > 0 && <span className="text-xs text-gray-400 ml-2">(모델: {modelSizeGb.toFixed(2)}GB)</span>}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={nGpuLayers}
+                      onChange={(e) => setNGpuLayers(parseInt(e.target.value))}
+                      className="w-full bg-gray-600 text-white px-2 py-1 rounded border border-gray-500 focus:outline-none focus:border-green-500 text-sm"
+                      disabled={!selectedModel}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">💡 0 = CPU only | 높을수록 GPU 사용 | 자동으로 추천값 설정됨</p>
+                  </div>
+                )}
 
                 {/* System Prompt */}
                 <div className="bg-gray-700 rounded-lg p-3">
@@ -567,10 +691,15 @@ Response Details:
                   {showParameters && (
                     <div className="bg-gray-800 p-3 border-t border-gray-600">
                       <pre className="bg-gray-900 text-gray-100 p-2 rounded font-mono text-xs overflow-x-auto">{`{
+  "message": "...",
   "temperature": ${temperature.toFixed(2)},
   "top_p": ${topP.toFixed(2)},
-  "max_tokens": ${maxResponseLength},
+  "max_tokens": ${maxTokens},
+  "repeat_penalty": ${repeatPenalty.toFixed(2)},
+  "n_gpu_layers": ${nGpuLayers},
+  "maintain_history": true,
   "model": "${selectedModel || "N/A"}",
+  "model_type": "${isGgufModel ? "GGUF" : "HuggingFace"}",
   "request_type": "chat.completion"
 }`}</pre>
                     </div>
