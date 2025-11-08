@@ -1,311 +1,564 @@
-# 🍎 MacTuner: MAC 환경 최적화 LLM 파인튜닝 & 배포 플랫폼
+# 🍎 MACtuner
 
-![License](https://img.shields.io/badge/license-MIT-green)
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
-![Node.js](https://img.shields.io/badge/node.js-18%2B-green)
-![macOS](https://img.shields.io/badge/macOS-12.0%2B-success)
+**Mac 환경 최적화 LLM 파인튜닝 & 배포 플랫폼**
 
-MacTuner는 Apple Silicon MAC 사용자를 위해 특별히 최적화된 **LLM 파인튜닝, PEFT, RAG, GGUF 배포**를 통합하는 올인원 플랫폼입니다. 직관적인 UI와 강력한 백엔드를 통해 누구나 쉽게 자신의 데이터로 강력한 언어 모델을 만들고 배포할 수 있습니다.
+[![Python Version](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![PyPI Version](https://img.shields.io/badge/Version-0.1.0-brightgreen.svg)](https://pypi.org/)
+[![Status](https://img.shields.io/badge/Status-Alpha-orange.svg)](#)
 
-## 🌟 주요 특징
+---
 
-### 1️⃣ **모델 관리**
+## 📋 목차
 
-- ✅ Hugging Face Hub에서 직접 모델 다운로드
-- ✅ 로컬 파일에서 모델 업로드
-- ✅ 모델 메타데이터 및 통계 제공
-- ✅ 스마트 캐싱 및 버전 관리
+- [소개](#-소개)
+- [주요 기능](#-주요-기능)
+- [스크린샷](#-스크린샷)
+- [설치 방법](#-설치-방법)
+- [빠른 시작](#-빠른-시작)
+- [프로젝트 구조](#-프로젝트-구조)
+- [API 문서](#-api-문서)
+- [기여 방법](#-기여-방법)
+- [라이선스](#-라이선스)
 
-### 2️⃣ **데이터 처리**
+---
 
-- ✅ CSV, JSON, JSONL, TXT 지원
-- ✅ 자동 데이터 정제 (결측치, 중복 제거)
-- ✅ 탐색적 데이터 분석 (EDA) 대시보드
-- ✅ 토큰 길이 분석 및 시각화
+## 🎯 소개
 
-### 3️⃣ **효율적인 학습**
+**MACtuner**는 Apple Silicon(M1/M2/M3) Mac에서 대규모 언어 모델(LLM)을 효율적으로 파인튜닝하고 배포할 수 있도록 설계된 올인원 플랫폼입니다.
 
-- ✅ **LoRA** (Low-Rank Adaptation) 지원
-- ✅ **QLoRA** (양자화 + LoRA) 지원
-- ✅ MAC MPS 최적화
-- ✅ 자동 파라미터 추천
-- ✅ 실시간 학습 모니터링
-- ✅ 자동 체크포인트 관리
+Mac의 제한된 리소스를 최대한 활용하기 위해 다음과 같은 최적화 기술을 활용합니다:
 
-### 4️⃣ **모델 검증**
+- **LoRA (Low-Rank Adaptation)**: 파라미터 효율적 파인튜닝
+- **GGUF 양자화**: 모델 크기 최소화 및 추론 속도 향상
+- **RAG (Retrieval Augmented Generation)**: 맞춤형 데이터를 활용한 답변 생성
+- **MPS (Metal Performance Shaders)**: Apple Silicon GPU 활용
 
-- ✅ 학습된 모델과 인터랙티브 채팅
-- ✅ 문맥 유지 및 대화 설정
-- ✅ 생성 파라미터 조정 (temperature, top-k, top-p 등)
-- ✅ 프롬프트 템플릿 관리
+### 🎨 핵심 지원 기능
 
-### 5️⃣ **RAG 기능**
+- 🤖 **LLM 파인튜닝**: LoRA, QLoRA를 통한 효율적 학습
+- 🎛️ **모델 양자화**: GGUF 형식으로 모델 변환 및 최적화
+- 📚 **데이터 관리**: CSV, Parquet, HuggingFace 데이터셋 지원
+- 💬 **RAG 파이프라인**: PDF 문서 기반 답변 생성
+- 🌐 **웹 UI**: 직관적인 대시보드 및 워크플로우 에디터
+- 📊 **모니터링**: 실시간 학습 진행 상황 추적
 
-- ✅ PDF, TXT, MARKDOWN 문서 지원
-- ✅ 텍스트 청킹 및 오버랩 설정
-- ✅ 임베딩 기반 검색
-- ✅ 문서 기반 질의응답
+---
 
-### 6️⃣ **모델 배포**
+## 🌟 주요 기능
 
-- ✅ GGUF 형식 변환
-- ✅ 다양한 양자화 옵션 (Q4, Q5, Q8, F16)
-- ✅ 최적화된 파일 크기
-- ✅ llama.cpp 호환성
+### 1️⃣ **대시보드** (Dashboard)
+- 하드웨어 정보 표시 (MPS, CPU, CUDA)
+- 설치된 데이터셋 현황
+- 최근 워크플로우 목록
+- 빠른 접근 패널
 
-## 📋 시스템 요구사항
+### 2️⃣ **모델 다운로드** (Model Download)
+- HuggingFace에서 모델 자동 다운로드
+- GPU/CPU 선택 가능
+- 다운로드 진행 상황 실시간 추적
 
-| 요소        | 최소             | 권장     |
-| ----------- | ---------------- | -------- |
-| **macOS**   | 12.0             | 13.0+    |
-| **CPU**     | Apple Silicon M1 | M2/M3/M4 |
-| **RAM**     | 8GB              | 16GB+    |
-| **Storage** | 50GB             | 100GB+   |
-| **Python**  | 3.11             | 3.11+    |
-| **Node.js** | 18               | 18+      |
+### 3️⃣ **데이터 처리** (Data Processing)
+- CSV 파일 업로드 및 EDA
+- HuggingFace 데이터셋 통합
+- 데이터 전처리 및 검증
+- 그리드 뷰 데이터 탐색
 
-## 🚀 빠른 시작
+### 4️⃣ **LoRA 학습** (Training)
+- LoRA/QLoRA 파인튜닝
+- 학습률, 배치 크기 등 하이퍼파라미터 조정
+- 체크포인트 저장 및 복구
+- 실시간 손실값 모니터링
 
-### 1단계: 저장소 클론
+### 5️⃣ **GGUF 내보내기** (Export GGUF)
+- 학습된 모델을 GGUF 형식으로 변환
+- 양자화 레벨 선택 (Q4, Q5, Q8)
+- 메타데이터 포함
+
+### 6️⃣ **RAG 파이프라인** (RAG)
+- PDF 문서 임베딩
+- 의미론적 검색
+- 맥락 기반 답변 생성
+
+### 7️⃣ **Chat Interface** (Chat)
+- 로컬 모델과의 대화
+- 여러 모델 선택 가능
+- 대화 히스토리 관리
+
+### 8️⃣ **Workflow Editor** (워크플로우 에디터)
+- 노드 기반 파이프라인 구성
+- 드래그 앤 드롭 인터페이스
+- 복잡한 워크플로우 자동화
+
+---
+
+## 📸 스크린샷
+
+### Dashboard
+![Dashboard](./snapshot_Image/스크린샷%202025-11-09%2001.02.23.png)
+*MACtuner 메인 대시보드 - 하드웨어 정보, 데이터셋, 워크플로우 관리*
+
+### Chat Interface
+![Chat Interface](./snapshot_Image/스크린샷%202025-11-09%2001.03.11.png)
+*LLM 채팅 인터페이스 - 다양한 모델 선택 및 실시간 대화*
+
+### Workflow Editor
+![Workflow Editor](./snapshot_Image/스크린샷%202025-11-09%2001.04.21.png)
+*고급 워크플로우 에디터 - 노드 기반 파이프라인 구성 및 실행*
+
+---
+
+## 🚀 설치 방법
+
+### 필수 요구사항
+
+- **OS**: macOS 11 이상 (Apple Silicon 또는 Intel)
+- **Python**: 3.11 이상
+- **RAM**: 최소 8GB (16GB 권장)
+- **디스크 공간**: 20GB 이상 (모델 저장용)
+
+### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/bunhine0452/Mactuner.git
+git clone https://github.com/Hyun00505/Mactuner.git
 cd Mactuner
 ```
 
-### 2단계: 환경 설정
+### 2. 백엔드 환경 설정
 
+#### 옵션 A: UV 사용 (권장)
 ```bash
-# Python 가상 환경
-python -m venv venv
+# uv 설치 (처음 한 번만)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 종속성 설치
+uv sync
+```
+
+#### 옵션 B: pip 사용
+```bash
+# 가상 환경 생성
+python3.11 -m venv venv
 source venv/bin/activate
 
-# 의존성 설치
+# 종속성 설치
 pip install -r backend/requirements.txt
 ```
 
-### 3단계: 백엔드 실행
-
-```bash
-python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 4단계: 프론트엔드 실행 (선택사항)
+### 3. 프론트엔드 환경 설정
 
 ```bash
 cd frontend
+
+# Node.js 종속성 설치
 npm install
+
+# 또는 yarn 사용
+yarn install
+```
+
+### 4. 환경 변수 설정
+
+```bash
+# 프로젝트 루트에서
+cp .env.example .env
+
+# .env 파일 수정 (필요시)
+nano .env
+```
+
+필요한 환경 변수:
+```env
+# HuggingFace
+HF_TOKEN=your_huggingface_token_here
+
+# 모델 경로
+MODEL_DIR=./models
+OUTPUT_DIR=./output
+
+# 포트
+BACKEND_PORT=8000
+FRONTEND_PORT=5173
+```
+
+---
+
+## 🎮 빠른 시작
+
+### 1. 백엔드 서버 실행
+
+```bash
+# uv 사용 시
+uv run python -m backend.main
+
+# 또는 활성화된 venv에서
+python -m backend.main
+```
+
+서버는 `http://localhost:8000`에서 실행됩니다.
+
+### 2. 프론트엔드 개발 서버 실행
+
+```bash
+cd frontend
+
+# 개발 서버 시작
 npm run dev
+
+# 또는 Electron 앱으로 실행 (Mac 네이티브 앱)
+npm run dev:electron
 ```
 
-자세한 설정은 [QUICK_START.md](./markdown/QUICK_START.md)를 참조하세요.
+프론트엔드는 `http://localhost:5173`에서 실행됩니다.
 
-## 📚 문서
-
-| 문서                                                          | 설명                                       |
-| ------------------------------------------------------------- | ------------------------------------------ |
-| [SPECIFICATION.md](./markdown/SPECIFICATION.md)               | 전체 기능 명세서 (각 기능별 상세 요구사항) |
-| [IMPLEMENTATION_GUIDE.md](./markdown/IMPLEMENTATION_GUIDE.md) | 개발자 구현 가이드 (코드 예시 포함)        |
-| [QUICK_START.md](./markdown/QUICK_START.md)                   | 빠른 시작 가이드 (5분 내 시작)             |
-
-## 🏗️ 아키텍처
+### 3. 웹 브라우저에서 접속
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    MacTuner Platform                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────────────┐      ┌──────────────────────┐    │
-│  │   Frontend (React)   │      │  Backend (FastAPI)   │    │
-│  │  - Dashboard         │◄────►│  - Model Service     │    │
-│  │  - Model Manager     │      │  - Training Service  │    │
-│  │  - Training Monitor  │      │  - RAG Service       │    │
-│  │  - Chat Interface    │      │  - GGUF Converter    │    │
-│  │  - RAG Setup         │      │  - Data Processor    │    │
-│  │  - Export Control    │      │                      │    │
-│  └──────────────────────┘      └──────────────────────┘    │
-│                                           │                 │
-│                                           ▼                 │
-│                    ┌──────────────────────────────┐         │
-│                    │   Storage & Cache            │         │
-│                    │  - HF Models Cache           │         │
-│                    │  - Training Checkpoints      │         │
-│                    │  - RAG Vector Store          │         │
-│                    │  - GGUF Models              │         │
-│                    └──────────────────────────────┘         │
-│                                                              │
-│  ┌──────────────────────┐      ┌──────────────────────┐    │
-│  │   External Services  │      │   MAC Optimization   │    │
-│  │  - Hugging Face HQ   │      │  - MPS Backend       │    │
-│  │  - PyPI              │      │  - Memory Mgmt       │    │
-│  │  - GitHub           │      │  - Performance       │    │
-│  └──────────────────────┘      └──────────────────────┘    │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+http://localhost:5173
 ```
 
-## 💻 기술 스택
+---
 
-### 백엔드
-
-- **Framework**: FastAPI
-- **ML/DL**: PyTorch, Transformers, PEFT
-- **Data Processing**: Pandas, NumPy, Scikit-learn
-- **RAG**: Sentence-transformers, FAISS, PyMuPDF
-- **Quantization**: BitsAndBytes, llama-cpp-python
-
-### 프론트엔드
-
-- **Framework**: React 18+
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Components**: Shadcn/ui, Radix UI
-- **State**: Zustand
-- **Data Fetching**: Axios, React Query
-- **Charts**: Recharts
-
-## 🎯 주요 기능 플로우
-
-### 학습 흐름
+## 📂 프로젝트 구조
 
 ```
-모델 선택 → 데이터 준비 → EDA 분석 → 파라미터 설정
-    ↓
-LoRA/QLoRA 학습 → 실시간 모니터링 → 체크포인트 저장
-    ↓
-최고 성능 모델 자동 저장
+Mactuner/
+├── backend/                          # 백엔드 서버
+│   ├── api/                         # API 엔드포인트
+│   │   ├── chat_interface.py       # 채팅 API
+│   │   ├── dataset_tools.py        # 데이터셋 처리
+│   │   ├── export_gguf.py          # GGUF 내보내기
+│   │   ├── model_loader.py         # 모델 로딩
+│   │   ├── rag_pipeline.py         # RAG 파이프라인
+│   │   └── training.py             # 학습 API
+│   ├── services/                    # 비즈니스 로직
+│   │   ├── chat_service.py         # 채팅 서비스
+│   │   ├── dataset_service.py      # 데이터셋 서비스
+│   │   ├── llama_cpp_service.py    # Llama.cpp 통합
+│   │   ├── model_service.py        # 모델 관리
+│   │   ├── quantization_service.py # 양자화 서비스
+│   │   ├── rag_service.py          # RAG 서비스
+│   │   └── training_service.py     # 학습 서비스
+│   ├── utils/                       # 유틸리티
+│   │   └── mac_optimization.py     # Mac 최적화
+│   ├── main.py                      # FastAPI 애플리케이션
+│   ├── config.py                    # 설정
+│   └── requirements.txt             # Python 종속성
+│
+├── frontend/                        # 프론트엔드 UI
+│   ├── src/
+│   │   ├── components/             # React 컴포넌트
+│   │   │   ├── Editor/            # 워크플로우 에디터
+│   │   │   ├── DataGrid.tsx        # 데이터 그리드
+│   │   │   ├── Header.tsx          # 헤더
+│   │   │   └── ...
+│   │   ├── pages/                 # 페이지
+│   │   │   ├── Dashboard.tsx       # 대시보드
+│   │   │   ├── Chat.tsx            # 채팅
+│   │   │   ├── DataProcessing.tsx  # 데이터 처리
+│   │   │   └── ModelDownload.tsx   # 모델 다운로드
+│   │   ├── stores/                # Zustand 스토어
+│   │   ├── utils/                 # 유틸리티
+│   │   ├── types/                 # TypeScript 타입
+│   │   └── App.tsx                # 메인 앱
+│   ├── electron/                  # Electron 설정
+│   │   ├── main.js               # Electron 메인 프로세스
+│   │   └── preload.js            # 프리로드 스크립트
+│   ├── package.json              # 종속성
+│   └── tsconfig.json             # TypeScript 설정
+│
+├── data/                           # 데이터 디렉토리
+│   └── dataset_history.json       # 데이터셋 메타데이터
+│
+├── tests/                         # 테스트
+│   └── backend/
+│       ├── test_chat.py
+│       ├── test_dataset_tools.py
+│       ├── test_export_gguf.py
+│       ├── test_model_loader.py
+│       ├── test_rag.py
+│       └── test_training.py
+│
+├── pyproject.toml                # 프로젝트 설정
+├── README.md                     # 이 파일
+└── LICENSE                       # MIT 라이선스
 ```
 
-### RAG 흐름
+---
 
+## 🔌 API 문서
+
+### 주요 엔드포인트
+
+#### 모델 관리
+
+```bash
+# 모델 다운로드
+POST /api/model/download
+Content-Type: application/json
+
+{
+  "model_id": "meta-llama/Llama-2-7b",
+  "device": "mps"  # mps, cpu, cuda
+}
 ```
-문서 업로드 → 텍스트 추출 → 청킹 설정
-    ↓
-임베딩 생성 → 벡터 스토어 구축
-    ↓
-질문 입력 → 관련 문서 검색 → 답변 생성
+
+#### 데이터셋 처리
+
+```bash
+# 데이터셋 업로드
+POST /api/dataset/upload
+Content-Type: multipart/form-data
+
+file: <CSV 또는 Parquet 파일>
+
+# 데이터셋 조회
+GET /api/dataset/list
+
+# HuggingFace 데이터셋 다운로드
+POST /api/dataset/download-hf
+Content-Type: application/json
+
+{
+  "dataset_id": "kuotient/orca-math-korean-dpo-pairs",
+  "split": "train"
+}
 ```
 
-### 배포 흐름
+#### 학습
 
+```bash
+# 학습 시작
+POST /api/training/start
+Content-Type: application/json
+
+{
+  "model_name": "meta-llama/Llama-2-7b",
+  "dataset_id": 1,
+  "learning_rate": 2e-4,
+  "num_epochs": 3,
+  "batch_size": 4
+}
+
+# 학습 상태 조회
+GET /api/training/status
 ```
-학습 완료 모델 선택 → 양자화 방식 선택 → GGUF 변환
-    ↓
-파일 크기 최적화 → 배포 준비 완료
+
+#### GGUF 내보내기
+
+```bash
+# GGUF 내보내기
+POST /api/export/gguf
+Content-Type: application/json
+
+{
+  "checkpoint_path": "./models/lora_model",
+  "quantization_level": "q4_0"
+}
 ```
 
-## 📊 성능 최적화
+#### 채팅
 
-### MAC MPS 활용
+```bash
+# 메시지 전송
+POST /api/chat/message
+Content-Type: application/json
 
-- PyTorch Metal Performance Shaders 자동 감지
-- 최적의 배치 크기 자동 계산
-- 메모리 사용 최적화
+{
+  "model_name": "meta-llama/Llama-2-7b",
+  "message": "안녕하세요",
+  "max_tokens": 512
+}
+```
 
-### 파인튜닝 효율성
+#### RAG
 
-- **LoRA**: 풀 파인튜닝 대비 메모리 90% 절감
-- **QLoRA**: 추가로 50% 메모리 절감
-- **그래디언트 체크포인팅**: 메모리 사용 30-50% 감소
+```bash
+# PDF 업로드 및 임베딩
+POST /api/rag/upload-pdf
+Content-Type: multipart/form-data
 
-### 모델 크기 감소
+file: <PDF 파일>
 
-- **Q4_0**: 원본 대비 약 25% 크기
-- **Q5_0**: 원본 대비 약 35% 크기
-- **Q8_0**: 원본 대비 약 50% 크기
+# RAG 쿼리
+POST /api/rag/query
+Content-Type: application/json
 
-## 🔄 개발 상태
+{
+  "query": "질문 내용",
+  "model_name": "meta-llama/Llama-2-7b",
+  "top_k": 3
+}
+```
 
-### Phase 1: 기본 기능 ✅ (계획)
+자세한 API 문서는 `http://localhost:8000/docs` (Swagger UI)를 참조하세요.
 
-- [ ] 모델 다운로드/업로드 API
-- [ ] 기본 EDA 대시보드
-- [ ] LoRA 파인튜닝
-- [ ] 학습 모니터링 UI
-- [ ] 기본 Chat 인터페이스
+---
 
-### Phase 2: 고급 기능 🔄 (계획)
+## 💻 개발 환경 설정
 
-- [ ] RAG 파이프라인
-- [ ] GGUF 변환
-- [ ] 파라미터 추천 엔진
-- [ ] Advanced Chat 옵션
+### 코드 포맷팅 및 린팅
 
-### Phase 3: 최적화 & 폴리싱 📋 (계획)
+```bash
+# Black으로 포맷팅
+uv run black backend/
 
-- [ ] MAC MPS 완전 최적화
-- [ ] UI/UX 개선
-- [ ] 성능 최적화
-- [ ] 테스트 & 문서화
+# Ruff로 린팅
+uv run ruff check backend/ --fix
 
-## 🔧 개발 가이드
+# MyPy 타입 체크
+uv run mypy backend/
+```
 
-### 새로운 기능 추가
+### 테스트 실행
 
-#### 백엔드 API 추가
+```bash
+# 모든 테스트 실행
+uv run pytest
 
+# 특정 테스트 실행
+uv run pytest tests/backend/test_chat.py
+
+# 커버리지 리포트
+uv run pytest --cov=backend --cov-report=html
+```
+
+---
+
+## 🐛 문제 해결
+
+### 문제: `ImportError: No module named 'llama_cpp'`
+
+**해결책**: llama-cpp-python은 시스템 환경에 따라 설치가 복잡할 수 있습니다.
+```bash
+# 사전 컴파일된 바이너리 사용
+pip install llama-cpp-python --only-binary :all:
+
+# 또는 Conda 사용
+conda install -c conda-forge llama-cpp-python
+```
+
+### 문제: Mac에서 PyTorch 느린 성능
+
+**해결책**: MPS 가속화 활성화 확인
 ```python
-# backend/api/new_feature.py
-from fastapi import APIRouter
-
-router = APIRouter(tags=["new_feature"])
-
-@router.post("/action")
-async def new_action(data: dict):
-    return {"status": "success"}
+import torch
+print(torch.backends.mps.is_available())  # True여야 함
 ```
 
-#### 프론트엔드 페이지 추가
+### 문제: 메모리 부족 (Out of Memory)
 
-```typescript
-// frontend/src/pages/NewPage.tsx
-export const NewPage = () => {
-  return <div>New Feature</div>;
-};
+**해결책**: 배치 크기 감소 또는 QLoRA 사용
+```python
+# 학습 설정
+batch_size = 2  # 4에서 감소
+use_qlora = True  # 4-bit 양자화 활성화
 ```
 
-더 자세한 가이드는 [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)를 참조하세요.
+---
 
-## 🐛 알려진 문제 및 해결책
+## 🤝 기여 방법
 
-| 문제               | 해결책                              |
-| ------------------ | ----------------------------------- |
-| MAC MPS 미지원     | PyTorch 최신 버전 업데이트          |
-| 메모리 부족        | 배치 크기 줄이기, LoRA 사용         |
-| 모델 다운로드 실패 | Hugging Face 토큰 확인, 캐시 초기화 |
-| 포트 충돌          | 다른 포트 사용 또는 프로세스 종료   |
+저희는 모든 기여를 환영합니다!
 
-## 📞 지원
+### 기여 절차
 
-- 📝 [GitHub Issues](https://github.com/bunhine0452/Mactuner/issues)
-- 💬 [GitHub Discussions](https://github.com/bunhine0452/Mactuner/discussions)
-- 📧 문의: support@mactuner.dev
+1. **저장소 포크**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/Mactuner.git
+   ```
 
-## 📜 라이선스
+2. **기능 브랜치 생성**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
 
-MIT License - 자유롭게 사용, 수정, 배포 가능합니다.
+3. **코드 수정**
+   - 코드 스타일 준수 (Black, Ruff)
+   - 타입 힌트 추가
+   - 문서화
 
-## 🙏 기여
+4. **테스트 작성 및 실행**
+   ```bash
+   uv run pytest
+   ```
 
-MacTuner 개발에 기여하고 싶으신가요?
+5. **커밋 및 푸시**
+   ```bash
+   git add .
+   git commit -m "feat: 멋진 기능 추가"
+   git push origin feature/amazing-feature
+   ```
 
-1. Fork 하기
-2. Feature 브랜치 생성 (`git checkout -b feature/AmazingFeature`)
-3. Commit 하기 (`git commit -m 'Add some AmazingFeature'`)
-4. Push 하기 (`git push origin feature/AmazingFeature`)
-5. Pull Request 열기
+6. **Pull Request 생성**
 
-자세한 기여 가이드는 [CONTRIBUTING.md](./CONTRIBUTING.md)를 참조하세요.
+### 개발 가이드라인
 
-## 🎓 학습 자료
+- Python 3.11+ 호환성 유지
+- PEP 8 스타일 가이드 준수
+- 모든 공개 함수에 docstring 추가
+- 50줄 이상의 코드는 테스트 작성
 
-- [PyTorch 공식 문서](https://pytorch.org/docs/)
-- [Hugging Face 가이드](https://huggingface.co/docs)
-- [PEFT 문서](https://huggingface.co/docs/peft)
-- [RAG 최적 사례](https://python.langchain.com/docs/modules/data_connection/retrievers/)
+---
 
-MacTuner로 다음을 할 수 있습니다:
+## 📝 CHANGELOG
 
-- 🏢 도메인 특화 챗봇 구축
-- 📝 맞춤형 텍스트 생성 모델 개발
-- 🔍 회사 문서 기반 QA 시스템
+### v0.1.0 (2025-11-09)
+
+- ✨ 초기 릴리스
+- 🎯 Dashboard 페이지 구현
+- 🔄 Model Loader 통합
+- 📚 Dataset Processing 기능
+- 🚀 LoRA 파인튜닝 파이프라인
+- 💬 Chat Interface 구현
+- 📊 Workflow Editor 추가
+- 🔌 RAG 파이프라인 지원
+
+---
+
+## 📚 참고 자료
+
+- [PyTorch 공식 문서](https://pytorch.org/)
+- [Transformers 라이브러리](https://huggingface.co/transformers/)
+- [PEFT (Parameter-Efficient Fine-Tuning)](https://github.com/huggingface/peft)
+- [GGUF 형식](https://github.com/ggerganov/ggml/blob/master/docs/gguf.md)
+- [LLaMA 모델](https://github.com/meta-llama/llama)
+
+---
+
+## ✋ 지원
+
+문제가 있거나 질문이 있으신가요?
+
+- 📧 이메일: bunhine0452@gmail.com
+- 🐛 [GitHub Issues](https://github.com/Hyun00505/Mactuner/issues)에서 버그 리포트
+- 💬 [Discussions](https://github.com/Hyun00505/Mactuner/discussions)에서 토론
+
+---
+
+## 📄 라이선스
+
+이 프로젝트는 **MIT 라이선스**를 따릅니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+
+---
+
+## 🙏 감사의 말
+
+이 프로젝트는 다음 오픈소스 프로젝트를 기반으로 합니다:
+
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [PyTorch](https://pytorch.org/)
+- [Hugging Face Transformers](https://huggingface.co/transformers/)
+- [React](https://react.dev/)
+- [Electron](https://www.electronjs.org/)
+
+---
+
+<div align="center">
+
+**MACtuner로 Mac에서 LLM을 다루는 것을 쉽게 만들어보세요! 🚀**
+
+[⭐ Star 주기](https://github.com/Hyun00505/Mactuner) | [🐛 이슈 제보](https://github.com/Hyun00505/Mactuner/issues) | [💬 토론](https://github.com/Hyun00505/Mactuner/discussions)
+
+</div>
+
