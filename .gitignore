@@ -51,6 +51,7 @@ models/
 *.pth
 *.gguf
 *.safetensors
+data/dataset_history.json
 
 # Environment variables
 .env
