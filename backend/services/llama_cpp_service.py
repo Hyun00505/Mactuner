@@ -156,17 +156,24 @@ class LlamaCppService:
             else:
                 context = self._build_context(user_message)
 
+            # max_tokens이 너무 작으면 조정 (더 자연스러운 응답을 위해)
+            # 프론트엔드의 auto mode에서는 이미 계산된 값이 전달되지만,
+            # 백엔드에서도 한 번 더 검증
+            effective_max_tokens = max(max_tokens, 256)
+            if effective_max_tokens < 512:
+                effective_max_tokens = 512  # 최소 512 토큰으로 조정
+
             # 응답 생성 - max_tokens를 늘려서 완전한 응답을 얻도록
             try:
                 response = self.llm(
                     context,
-                    max_tokens=max(max_tokens, 512),  # 최소 512 토큰
+                    max_tokens=effective_max_tokens,
                     temperature=temperature,
                     top_p=top_p,
                     top_k=top_k,
                     repeat_penalty=repeat_penalty,
                     echo=False,
-                    stop=["User:", "\n\nUser:"],  # 더 명확한 stop token
+                    stop=["Q:", "\n\nQ:"],  # 새로운 질문이 시작되면 중단
                 )
             except Exception as e:
                 # Context window 초과 시 더 짧은 히스토리로 재시도
@@ -176,18 +183,40 @@ class LlamaCppService:
                     context = self._build_context_with_history(user_message)
                     response = self.llm(
                         context,
-                        max_tokens=max(max_tokens, 512),
+                        max_tokens=effective_max_tokens,
                         temperature=temperature,
                         top_p=top_p,
                         top_k=top_k,
                         repeat_penalty=repeat_penalty,
                         echo=False,
-                        stop=["User:", "\n\nUser:"],
+                        stop=["Q:", "\n\nQ:"],
                     )
                 else:
                     raise
 
             text = response["choices"][0]["text"].strip()
+            
+            # 응답 검증 - 응답이 비어있거나 유효하지 않으면 재시도
+            if not text or len(text.strip()) < 5:
+                logger.warning(f"Empty or very short response: '{text}'. Retrying...")
+                # 재시도: 더 낮은 온도로 다시 시도
+                try:
+                    # 재시도: 기본값으로 설정하되 최소 512 토큰 유지
+                    retry_max_tokens = max(effective_max_tokens, 512)
+                    response = self.llm(
+                        context,
+                        max_tokens=retry_max_tokens,
+                        temperature=max(0.3, temperature * 0.5),  # 온도 감소
+                        top_p=0.8,
+                        top_k=40,
+                        repeat_penalty=1.2,
+                        echo=False,
+                        stop=["Q:", "\n\nQ:"],
+                    )
+                    text = response["choices"][0]["text"].strip()
+                except Exception as retry_error:
+                    logger.error(f"Retry failed: {str(retry_error)}")
+                    text = "I'm processing your question. Could you please provide more context or rephrase it?"
             
             # 응답 정리 - 불완전한 문장 제거
             text = self._cleanup_response(text)
@@ -221,50 +250,72 @@ class LlamaCppService:
         if not text or not text.strip():
             return "I'm unable to generate a response. Please try again with different parameters or a simpler prompt."
         
+        # 기본 정리
+        text = text.strip()
+        
         # 줄 단위로 분할
         lines = text.split('\n')
         
         # 선행/후행 공백 제거, 빈 줄은 유지 (마크다운 포맷을 위해)
         lines = [line.rstrip() for line in lines]
         
-        # 응답이 너무 짧으면 반환
-        if len('\n'.join(lines).strip()) < 3:
-            return "I'm unable to generate a meaningful response. Please try again."
+        # 프롬프트 구조 제거 (Q:, A: 등)
+        cleaned_lines = []
+        for line in lines:
+            # 프롬프트 마커로 시작하면 건너뛰기
+            if line.strip().startswith(('Q:', 'A:', 'User:', 'Assistant:', '###')):
+                continue
+            cleaned_lines.append(line)
+        
+        # 빈 줄 제거 (결과 검증 전에)
+        non_empty_lines = [line for line in cleaned_lines if line.strip()]
+        
+        # 응답이 너무 짧으면 원본 반환 (정리 전 텍스트가 있다면)
+        if len('\n'.join(non_empty_lines).strip()) < 5 and len(non_empty_lines) == 0:
+            return text  # 원본 텍스트 반환
         
         # 코드 블록 완성도 확인
-        code_fence_count = sum(line.count('```') for line in lines)
+        code_fence_count = sum(line.count('```') for line in cleaned_lines)
         
         # 코드 블록이 홀수개면 닫기 추가
         if code_fence_count % 2 == 1:
-            lines.append('```')
+            cleaned_lines.append('```')
         
-        result = '\n'.join(lines).strip()
-        return result if result else "I'm unable to generate a response. Please try again."
+        result = '\n'.join(cleaned_lines).strip()
+        return result if result else text  # 비어있으면 원본 반환
 
     def _build_context(self, user_message: str) -> str:
         """컨텍스트 구축 (히스토리 없이)"""
+        # 시스템 프롬프트가 있으면 포함
+        prompt = ""
         if self.system_prompt:
             prompt = f"{self.system_prompt}\n\n"
-        else:
-            prompt = ""
-        prompt += f"User: {user_message}\nAssistant:"
-        return prompt
+        
+        # 사용자 질문 추가
+        prompt += f"Q: {user_message}\n\nA:"
+        return prompt.strip()
 
     def _build_context_with_history(self, user_message: str) -> str:
         """컨텍스트 구축 (히스토리 포함)"""
         prompt = ""
         
+        # 시스템 프롬프트가 있으면 포함
         if self.system_prompt:
             prompt = f"{self.system_prompt}\n\n"
         
         # 최근 대화 추가 (최대 5개 왕복)
         recent_history = self.conversation_history[-10:] if len(self.conversation_history) > 10 else self.conversation_history
-        for msg in recent_history:
-            role = "User" if msg["role"] == "user" else "Assistant"
-            prompt += f"{role}: {msg['content']}\n"
         
-        prompt += f"User: {user_message}\nAssistant:"
-        return prompt
+        # 대화 히스토리 추가
+        for msg in recent_history:
+            if msg["role"] == "user":
+                prompt += f"Q: {msg['content']}\n"
+            else:
+                prompt += f"A: {msg['content']}\n\n"
+        
+        # 새로운 질문 추가
+        prompt += f"Q: {user_message}\n\nA:"
+        return prompt.strip()
 
     def clear_history(self) -> Dict[str, str]:
         """히스토리 초기화"""

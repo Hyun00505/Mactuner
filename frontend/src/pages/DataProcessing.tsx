@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { datasetAPI } from "../utils/api";
+import { DataGrid } from "../components/DataGrid";
 
 interface DataStats {
   total_rows: number;
@@ -29,7 +30,9 @@ export const DataProcessing: React.FC = () => {
   const [message, setMessage] = useState("");
   const [dataInfo, setDataInfo] = useState<any>(null);
   const [preview, setPreview] = useState<any[]>([]);
+  const [fullData, setFullData] = useState<any[]>([]);
   const [stats, setStats] = useState<DataStats | null>(null);
+  const [loadingFullData, setLoadingFullData] = useState(false);
 
   // 검색/필터/정렬
   const [searchTerm, setSearchTerm] = useState("");
@@ -282,12 +285,67 @@ export const DataProcessing: React.FC = () => {
         console.warn("Failed to fetch statistics", statsError);
       }
       
-      // 히스토리 및 캐시 로드
+      // 히스토리 및 캐시 로드 (병렬로)
       loadHistory();
       loadCachedDatasets();
+      
+      // 전체 데이터 로드 (가장 마지막에)
+      // 약간의 지연 후 로드하여 상태 업데이트 완료 대기
+      setTimeout(() => {
+        fetchFullData();
+      }, 100);
     } catch (error) {
       console.error("Failed to fetch data info", error);
       setMessage("❌ 데이터 정보를 불러오지 못했습니다");
+    }
+  };
+  
+  const fetchFullData = async () => {
+    try {
+      setLoadingFullData(true);
+      console.log("📥 전체 데이터 로드 시작...");
+      const response = await datasetAPI.fullData();
+      console.log("📥 응답 받음:", response);
+      
+      const fullDataResponse = response.data?.data || response.data;
+      console.log("📥 파싱된 응답:", fullDataResponse);
+      console.log("📥 응답 타입:", typeof fullDataResponse);
+      console.log("📥 rows 존재?:", fullDataResponse?.rows);
+      console.log("📥 rows는 배열?:", Array.isArray(fullDataResponse?.rows));
+      
+      // no_data 상태 체크
+      if (fullDataResponse?.status === "no_data") {
+        console.warn("⚠️ 데이터가 로드되지 않았습니다 (no_data)");
+        setMessage("⚠️ 데이터 로드 대기 중입니다. 잠시 후 다시 시도하세요.");
+        // 재시도: 1초 후 다시 시도
+        setTimeout(() => {
+          console.log("🔄 데이터 로드 재시도...");
+          fetchFullData();
+        }, 1000);
+        return;
+      }
+      
+      if (fullDataResponse && fullDataResponse.rows && Array.isArray(fullDataResponse.rows)) {
+        console.log(`📥 데이터 ${fullDataResponse.rows.length}개 행 설정 시작...`);
+        setFullData(fullDataResponse.rows);
+        console.log(`✅ ${fullDataResponse.rows.length}개 행 로드 완료`);
+        setMessage(`✅ 전체 데이터 로드 완료! (${fullDataResponse.rows.length}개 행)`);
+      } else {
+        console.warn("❌ rows 데이터 구조 오류:", {
+          hasRows: !!fullDataResponse?.rows,
+          isArray: Array.isArray(fullDataResponse?.rows),
+          rowsLength: fullDataResponse?.rows?.length,
+          fullResponse: fullDataResponse
+        });
+        setMessage("❌ 데이터 형식 오류입니다");
+      }
+    } catch (error: any) {
+      console.error("❌ 전체 데이터 로드 실패:", error);
+      console.error("에러 메시지:", error.message);
+      console.error("에러 응답:", error.response?.data);
+      setMessage(`❌ 데이터 로드 실패: ${error.message}`);
+    } finally {
+      setLoadingFullData(false);
     }
   };
   
@@ -749,130 +807,6 @@ export const DataProcessing: React.FC = () => {
             </div>
 
             {/* 데이터 조작 패널 */}
-            <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700">
-              <h2 className="text-xl font-bold mb-6">🔧 데이터 조작</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                {/* 검색 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">🔍 검색</label>
-                  <input
-                    type="text"
-                    placeholder="모든 컬럼에서 검색..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                {/* 정렬 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">🔄 정렬</label>
-                  <select
-                    value={sortConfig.column || ""}
-                    onChange={(e) => setSortConfig((prev) => ({ ...prev, column: e.target.value || null }))}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">열 선택...</option>
-                    {preview.length > 0 &&
-                      Object.keys(preview[0]).map((col) => (
-                        <option key={col} value={col}>
-                          {col}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                {/* 정렬 방향 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">순서</label>
-                  <select
-                    value={sortConfig.direction}
-                    onChange={(e) => setSortConfig((prev) => ({ ...prev, direction: e.target.value as "asc" | "desc" }))}
-                    className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="asc">⬆️ 오름차순</option>
-                    <option value="desc">⬇️ 내림차순</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* 필터 추가 */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => {
-                    if (preview.length > 0) {
-                      const firstCol = Object.keys(preview[0])[0];
-                      setFilters([...filters, { column: firstCol, operator: "contains", value: "" }]);
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
-                >
-                  ➕ 필터 추가
-                </button>
-                {filters.length > 0 && (
-                  <button onClick={() => setFilters([])} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors">
-                    ❌ 필터 초기화
-                  </button>
-                )}
-                <div className="text-gray-400 text-sm flex items-center ml-auto">
-                  검색 결과: <span className="text-green-400 font-bold ml-2">{processedData.length}</span> / <span className="text-gray-500 ml-1">{preview.length}</span> 행
-                </div>
-              </div>
-
-              {/* 필터 UI */}
-              {filters.map((filter, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3 p-3 bg-gray-700 rounded-lg">
-                  <select
-                    value={filter.column}
-                    onChange={(e) => {
-                      const newFilters = [...filters];
-                      newFilters[idx].column = e.target.value;
-                      setFilters(newFilters);
-                    }}
-                    className="bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-blue-500 focus:outline-none"
-                  >
-                    {preview.length > 0 &&
-                      Object.keys(preview[0]).map((col) => (
-                        <option key={col} value={col}>
-                          {col}
-                        </option>
-                      ))}
-                  </select>
-                  <select
-                    value={filter.operator}
-                    onChange={(e) => {
-                      const newFilters = [...filters];
-                      newFilters[idx].operator = e.target.value as any;
-                      setFilters(newFilters);
-                    }}
-                    className="bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="contains">포함</option>
-                    <option value="equals">동일</option>
-                    <option value=">">초과</option>
-                    <option value="<">미만</option>
-                    <option value=">=">이상</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={filter.value}
-                    onChange={(e) => {
-                      const newFilters = [...filters];
-                      newFilters[idx].value = e.target.value;
-                      setFilters(newFilters);
-                    }}
-                    placeholder="필터 값..."
-                    className="bg-gray-600 text-white px-3 py-2 rounded border border-gray-500 focus:border-blue-500 focus:outline-none"
-                  />
-                  <button onClick={() => setFilters(filters.filter((_, i) => i !== idx))} className="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg font-medium transition-colors">
-                    🗑️ 제거
-                  </button>
-                </div>
-              ))}
-            </div>
 
             {/* 데이터 정제 패널 */}
             <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700">
@@ -893,124 +827,41 @@ export const DataProcessing: React.FC = () => {
               </div>
             </div>
 
-            {/* 데이터 테이블 */}
-            {preview && preview.length > 0 ? (
-              <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 mb-8">
-                <div className="p-6 border-b border-gray-700">
-                  <h2 className="text-xl font-bold">📋 데이터 미리보기</h2>
-                  <p className="text-gray-400 text-sm mt-1">
-                    페이지 {currentPage} / {totalPages} ({paginatedData.length}개 행)
-                  </p>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-700 border-b border-gray-600">
-                        {paginatedData.length > 0 &&
-                          Object.keys(paginatedData[0]).map((key) => (
-                            <th
-                              key={key}
-                              className="px-4 py-3 text-left font-semibold text-gray-300 whitespace-nowrap cursor-pointer hover:text-white"
-                              onClick={() => setSortConfig({ column: key, direction: sortConfig.direction })}
-                            >
-                              {key}
-                            </th>
-                          ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedData.map((row, idx) => (
-                        <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700 transition-colors">
-                          {Object.values(row as any).map((val, cidx) => (
-                            <td key={cidx} className="px-4 py-3 text-sm text-gray-300">
-                              <div className="max-w-xs truncate" title={String(val)}>
-                                {val === null || val === undefined ? "∅" : String(val).substring(0, 100)}
-                              </div>
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* 페이지네이션 */}
-                <div className="p-6 border-t border-gray-700 flex items-center justify-between">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    ⬅️ 이전
-                  </button>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="number"
-                      min="1"
-                      max={totalPages}
-                      value={currentPage}
-                      onChange={(e) => setCurrentPage(Math.min(totalPages, Math.max(1, parseInt(e.target.value) || 1)))}
-                      className="w-16 bg-gray-700 text-white px-3 py-2 rounded text-center border border-gray-600 focus:border-blue-500 focus:outline-none"
-                    />
-                    <span className="text-gray-400">/ {totalPages}</span>
+            {/* 고급 데이터 그리드 */}
+            {loadingFullData ? (
+              <div className="mb-8 bg-gray-800 rounded-lg border border-gray-700 p-8">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="animate-spin text-5xl">⏳</div>
+                  <div className="text-center">
+                    <p className="text-lg text-cyan-300 font-semibold mb-2">데이터를 로드하는 중입니다...</p>
+                    <p className="text-sm text-gray-400">이 작업은 몇 초에서 수십 초가 소요될 수 있습니다</p>
+                    {dataInfo && (
+                      <div className="mt-4 text-xs text-gray-500">
+                        <p>📊 {dataInfo.rows} 행 × {dataInfo.columns} 열</p>
+                        <p>💾 약 {(dataInfo.size_mb || 0).toFixed(2)} MB</p>
+                      </div>
+                    )}
                   </div>
-                  <select
-                    value={rowsPerPage}
-                    onChange={(e) => {
-                      setRowsPerPage(parseInt(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="10">10개/페이지</option>
-                    <option value="25">25개/페이지</option>
-                    <option value="50">50개/페이지</option>
-                    <option value="100">100개/페이지</option>
-                  </select>
-                  <button
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    다음 ➜
-                  </button>
-                </div>
-
-                {/* 데이터 내보내기 */}
-                <div className="p-6 border-t border-gray-700 flex gap-4 flex-wrap">
-                  <h3 className="w-full text-lg font-semibold mb-3">📥 데이터 내보내기</h3>
-                  <button
-                    onClick={() => {
-                      const csv = generateCSV(paginatedData);
-                      downloadFile(csv, "data.csv", "text/csv");
-                    }}
-                    className="flex-1 min-w-[150px] px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
-                  >
-                    📊 CSV로 내보내기
-                  </button>
-                  <button
-                    onClick={() => {
-                      const json = JSON.stringify(paginatedData, null, 2);
-                      downloadFile(json, "data.json", "application/json");
-                    }}
-                    className="flex-1 min-w-[150px] px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors"
-                  >
-                    📋 JSON으로 내보내기
-                  </button>
-                  <button
-                    onClick={() => {
-                      const json = paginatedData.map((row) => JSON.stringify(row)).join("\n");
-                      downloadFile(json, "data.jsonl", "text/plain");
-                    }}
-                    className="flex-1 min-w-[150px] px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors"
-                  >
-                    🔗 JSONL로 내보내기
-                  </button>
                 </div>
               </div>
+            ) : fullData && fullData.length > 0 ? (
+              <div className="mb-8 h-[800px]">
+                <DataGrid
+                  data={fullData}
+                  title={`📊 고급 데이터 그리드 (전체 데이터: ${fullData.length}행)`}
+                  showSearch={true}
+                  showSort={true}
+                  showFilter={true}
+                  showExport={true}
+                />
+              </div>
+            ) : preview && preview.length > 0 ? (
+              <div className="bg-gray-800 rounded-lg p-8 border border-gray-700 text-center mb-8">
+                <p className="text-gray-400 mb-4">📭 전체 데이터 로드를 기다리는 중입니다...</p>
+                <p className="text-xs text-gray-500">새로고침이 필요하면 브라우저 개발자 도구(F12)의 콘솔을 확인해주세요</p>
+              </div>
             ) : (
-              <div className="bg-gray-800 rounded-lg p-8 border border-gray-700 text-center">
+              <div className="bg-gray-800 rounded-lg p-8 border border-gray-700 text-center mb-8">
                 <p className="text-gray-400">📭 파일을 업로드하면 여기에 데이터가 표시됩니다</p>
               </div>
             )}

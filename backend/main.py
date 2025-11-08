@@ -1,6 +1,9 @@
 """MacTuner FastAPI 메인 애플리케이션"""
 import os
 
+# HuggingFace tokenizers 병렬 처리 경고 억제
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 import torch
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

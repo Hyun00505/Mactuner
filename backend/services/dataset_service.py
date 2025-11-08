@@ -120,6 +120,40 @@ class DatasetService:
             "preview_rows": n_rows * 2,
         }
 
+    def get_full_data(self, limit: Optional[int] = None, offset: int = 0) -> Dict[str, Any]:
+        """완전한 데이터 반환 (페이징 지원)"""
+        if self.data is None:
+            print("❌ get_full_data: 데이터가 없습니다")
+            raise ValueError("로드된 데이터가 없습니다.")
+
+        total_rows = len(self.data)
+        print(f"📥 get_full_data: total_rows={total_rows}, limit={limit}, offset={offset}")
+        
+        # limit이 없으면 모든 데이터 반환
+        if limit is None:
+            data_slice = self.data.iloc[offset:]
+        else:
+            data_slice = self.data.iloc[offset : offset + limit]
+        
+        print(f"📥 get_full_data: 반환할 행 수={len(data_slice)}")
+        
+        # 데이터를 dict로 변환
+        rows_data = data_slice.to_dict(orient="records")
+        print(f"✅ get_full_data: 변환 완료, 첫 행={rows_data[0] if rows_data else 'N/A'}")
+        
+        result = {
+            "rows": rows_data,
+            "total_rows": total_rows,
+            "returned_rows": len(data_slice),
+            "offset": offset,
+            "limit": limit,
+            "columns": self.data.columns.tolist(),
+            "dtypes": {col: str(dtype) for col, dtype in self.data.dtypes.items()},
+        }
+        
+        print(f"✅ get_full_data: 결과 크기={len(str(result))} bytes")
+        return result
+
     # ========================================
     # 데이터 정제
     # ========================================

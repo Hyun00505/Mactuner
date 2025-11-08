@@ -162,6 +162,28 @@ async def get_preview(n_rows: int = Query(5)) -> Dict:
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/full-data")
+async def get_full_data(limit: Optional[int] = Query(None), offset: int = Query(0)) -> Dict:
+    """완전한 데이터 반환 (페이징 지원)"""
+    try:
+        # 파라미터 안전 처리
+        safe_limit = None if limit is None else max(1, int(limit))
+        safe_offset = max(0, int(offset))
+        
+        print(f"📥 [GET /full-data] limit={safe_limit}, offset={safe_offset}")
+        data = dataset_service.get_full_data(limit=safe_limit, offset=safe_offset)
+        print(f"✅ [GET /full-data] 반환 데이터: {len(data.get('rows', []))} 행")
+        return {"status": "success", "data": data}
+    except ValueError as e:
+        print(f"❌ [GET /full-data] ValueError: {str(e)}")
+        return {"status": "no_data", "data": None, "message": str(e)}
+    except Exception as e:
+        print(f"❌ [GET /full-data] Exception: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ========================================
 # 데이터 정제
 # ========================================

@@ -30,6 +30,25 @@ export const datasetAPI = {
   },
   info: () => api.get("/dataset/info"),
   preview: (n_rows?: number) => api.get(`/dataset/preview?n_rows=${n_rows || 5}`),
+  fullData: (limit?: number, offset?: number) => {
+    // limit과 offset을 안전하게 처리
+    const params = new URLSearchParams();
+    if (limit !== undefined && limit !== null) {
+      params.append('limit', String(limit));
+    }
+    if (offset !== undefined && offset !== null) {
+      params.append('offset', String(offset));
+    }
+    const url = `/dataset/full-data${params.toString() ? '?' + params.toString() : ''}`;
+    console.log("📡 [API] GET", url);
+    return api.get(url).then(res => {
+      console.log("📡 [API] 응답 받음:", res);
+      return res;
+    }).catch(err => {
+      console.error("📡 [API] 에러:", err);
+      throw err;
+    });
+  },
   clean: (operation: string, kwargs?: any) => api.post("/dataset/clean", { operation, kwargs }),
   statistics: () => api.get("/dataset/eda/statistics"),
   split: (test_size?: number) => api.post("/dataset/split", { test_size: test_size || 0.2 }),

@@ -1,4 +1,5 @@
 """모델 로딩 서비스"""
+import logging
 import os
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -9,6 +10,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from backend.config import settings
 from backend.utils.mac_optimization import MACOptimizer
 
+logger = logging.getLogger(__name__)
+
 
 class ModelService:
     """모델 로드 및 관리 서비스"""
@@ -18,12 +21,15 @@ class ModelService:
         self.cache_dir = settings.MODEL_CACHE_DIR
 
     def load_from_hub(
-        self, model_id: str, token: Optional[str] = None
+        self, model_id: str, token: Optional[str] = None, progress_callback=None
     ) -> Tuple[torch.nn.Module, AutoTokenizer, Dict]:
         """Hugging Face Hub에서 모델 다운로드 및 로드"""
         try:
             # 토큰 설정
             hf_token = token or settings.HUGGINGFACE_TOKEN
+
+            if progress_callback:
+                progress_callback({"status": "loading_tokenizer", "message": "토크나이저 로드 중...", "progress": 10})
 
             # 토크나이저 로드
             tokenizer = AutoTokenizer.from_pretrained(
@@ -33,6 +39,17 @@ class ModelService:
                 trust_remote_code=True,
             )
 
+            if progress_callback:
+                progress_callback({"status": "tokenizer_done", "message": "토크나이저 로드 완료", "progress": 20})
+
+            if progress_callback:
+                progress_callback({"status": "loading_model_config", "message": "모델 구성 로드 중...", "progress": 25})
+
+            # HuggingFace 라이브러리 로그 레벨 설정 (진행 정보 출력)
+            transformers_logger = logging.getLogger("transformers")
+            old_level = transformers_logger.level
+            transformers_logger.setLevel(logging.INFO)
+            
             # 모델 로드
             model = AutoModelForCausalLM.from_pretrained(
                 model_id,
@@ -42,18 +59,30 @@ class ModelService:
                 cache_dir=self.cache_dir,
                 trust_remote_code=True,
             )
+            
+            # 로그 레벨 복원
+            transformers_logger.setLevel(old_level)
+
+            if progress_callback:
+                progress_callback({"status": "model_loaded", "message": "모델 로드 완료", "progress": 85})
 
             # 디바이스로 이동
             if self.device.type != "cpu" or self.device.type != "auto":
                 model = model.to(self.device)
+                if progress_callback:
+                    progress_callback({"status": "model_moved_to_device", "message": f"모델을 {self.device}로 이동", "progress": 90})
 
             metadata = self._extract_metadata(model, model_id, "hub")
+            
+            if progress_callback:
+                progress_callback({"status": "metadata_extracted", "message": "메타데이터 추출 완료", "progress": 95})
+            
             return model, tokenizer, metadata
 
         except Exception as e:
             raise RuntimeError(f"모델 로드 실패 ({model_id}): {str(e)}")
 
-    def load_local(self, path: str) -> Tuple[torch.nn.Module, AutoTokenizer, Dict]:
+    def load_local(self, path: str, progress_callback=None) -> Tuple[torch.nn.Module, AutoTokenizer, Dict]:
         """로컬 경로에서 모델 로드"""
         path = Path(path).expanduser()
 
@@ -61,12 +90,26 @@ class ModelService:
             raise FileNotFoundError(f"모델 경로를 찾을 수 없음: {path}")
 
         try:
+            if progress_callback:
+                progress_callback({"status": "loading_tokenizer", "message": "토크나이저 로드 중...", "progress": 10})
+
             # 토크나이저 로드
             tokenizer = AutoTokenizer.from_pretrained(
                 str(path),
                 trust_remote_code=True,
             )
 
+            if progress_callback:
+                progress_callback({"status": "tokenizer_done", "message": "토크나이저 로드 완료", "progress": 20})
+
+            if progress_callback:
+                progress_callback({"status": "loading_model_config", "message": "모델 구성 로드 중...", "progress": 25})
+
+            # HuggingFace 라이브러리 로그 레벨 설정 (진행 정보 출력)
+            transformers_logger = logging.getLogger("transformers")
+            old_level = transformers_logger.level
+            transformers_logger.setLevel(logging.INFO)
+            
             # 모델 로드
             model = AutoModelForCausalLM.from_pretrained(
                 str(path),
@@ -74,12 +117,24 @@ class ModelService:
                 torch_dtype=torch.float16 if self.device.type == "mps" else "auto",
                 trust_remote_code=True,
             )
+            
+            # 로그 레벨 복원
+            transformers_logger.setLevel(old_level)
+
+            if progress_callback:
+                progress_callback({"status": "model_loaded", "message": "모델 로드 완료", "progress": 85})
 
             # 디바이스로 이동
             if self.device.type != "cpu" or self.device.type != "auto":
                 model = model.to(self.device)
+                if progress_callback:
+                    progress_callback({"status": "model_moved_to_device", "message": f"모델을 {self.device}로 이동", "progress": 90})
 
             metadata = self._extract_metadata(model, str(path), "local")
+            
+            if progress_callback:
+                progress_callback({"status": "metadata_extracted", "message": "메타데이터 추출 완료", "progress": 95})
+            
             return model, tokenizer, metadata
 
         except Exception as e:

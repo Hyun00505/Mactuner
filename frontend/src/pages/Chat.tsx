@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { chatAPI } from "../utils/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface Message {
   id: string;
@@ -51,11 +53,80 @@ export const Chat: React.FC = () => {
   const [modelCustomNames, setModelCustomNames] = useState<Record<string, string>>({});
   const [editingModelName, setEditingModelName] = useState<string | null>(null);
   const [newModelName, setNewModelName] = useState("");
+  const [autoMaxTokens, setAutoMaxTokens] = useState(true); // Auto mode for max tokens
+  const [autoMinTokens, setAutoMinTokens] = useState(512); // Auto mode min tokens
+  const [autoMaxTokensValue, setAutoMaxTokensValue] = useState(4096); // Auto mode max tokens
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // 전체 메시지 복사
+  const copyToClipboard = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  // 코드만 추출해서 복사
+  const copyCodeBlock = async (code: string, codeId: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCodeId(codeId);
+      setTimeout(() => setCopiedCodeId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy code:", err);
+    }
+  };
+
+  // 코드 블록 렌더러
+  const CodeBlockRenderer = ({ node, inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || "");
+    const language = match ? match[1] : "text";
+    const code = String(children).replace(/\n$/, "");
+    const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
+
+    if (inline) {
+      return <code className="bg-gray-800 px-2 py-1 rounded text-red-400">{children}</code>;
+    }
+
+    return (
+      <div className="relative group my-3 rounded-lg overflow-hidden border border-gray-600">
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition z-10">
+          <button
+            onClick={() => copyCodeBlock(code, codeId)}
+            className={`px-3 py-1 rounded text-xs font-medium transition ${
+              copiedCodeId === codeId
+                ? "bg-green-600 text-white"
+                : "bg-gray-700 text-gray-200 hover:bg-gray-600"
+            }`}
+            title="Copy code"
+          >
+            {copiedCodeId === codeId ? "✓ Copied" : "📋 Copy"}
+          </button>
+        </div>
+        <SyntaxHighlighter
+          language={language}
+          style={dracula}
+          customStyle={{
+            margin: 0,
+            borderRadius: 0,
+          }}
+          {...props}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
+    );
+  };
+
 
   // GPU layers 자동 추천 함수
   const calculateRecommendedGpuLayers = (modelSizeGb: number): number => {
@@ -95,6 +166,9 @@ export const Chat: React.FC = () => {
     const savedMaxResponseLength = localStorage.getItem("maxResponseLength");
     const savedNGpuLayers = localStorage.getItem("nGpuLayers");
     const savedRepeatPenalty = localStorage.getItem("repeatPenalty");
+    const savedAutoMaxTokens = localStorage.getItem("autoMaxTokens");
+    const savedAutoMinTokens = localStorage.getItem("autoMinTokens");
+    const savedAutoMaxTokensValue = localStorage.getItem("autoMaxTokensValue");
 
     if (savedModel) setSelectedModel(savedModel);
     if (savedWidth) setSettingsPanelWidth(parseInt(savedWidth));
@@ -116,6 +190,9 @@ export const Chat: React.FC = () => {
     if (savedMaxResponseLength) setMaxResponseLength(parseInt(savedMaxResponseLength));
     if (savedNGpuLayers) setNGpuLayers(parseInt(savedNGpuLayers));
     if (savedRepeatPenalty) setRepeatPenalty(parseFloat(savedRepeatPenalty));
+    if (savedAutoMaxTokens !== null) setAutoMaxTokens(JSON.parse(savedAutoMaxTokens));
+    if (savedAutoMinTokens) setAutoMinTokens(parseInt(savedAutoMinTokens));
+    if (savedAutoMaxTokensValue) setAutoMaxTokensValue(parseInt(savedAutoMaxTokensValue));
   }, []);
 
   // 모델 선택 저장
@@ -152,6 +229,39 @@ export const Chat: React.FC = () => {
   useEffect(() => {
     localStorage.setItem("repeatPenalty", repeatPenalty.toString());
   }, [repeatPenalty]);
+
+  // Auto Max Tokens 저장
+  useEffect(() => {
+    localStorage.setItem("autoMaxTokens", JSON.stringify(autoMaxTokens));
+  }, [autoMaxTokens]);
+
+  // Auto Min/Max Tokens 저장
+  useEffect(() => {
+    localStorage.setItem("autoMinTokens", autoMinTokens.toString());
+  }, [autoMinTokens]);
+
+  useEffect(() => {
+    localStorage.setItem("autoMaxTokensValue", autoMaxTokensValue.toString());
+  }, [autoMaxTokensValue]);
+
+  // 동적 max_tokens 계산 (auto 모드)
+  const calculateAutoMaxTokens = (userMessageLength: number): number => {
+    // 사용자 메시지 길이에 따라 동적으로 결정
+    // 설정된 범위 내에서 메시지 길이에 비례하게 조정
+    const range = autoMaxTokensValue - autoMinTokens;
+    
+    if (userMessageLength < 20) {
+      return autoMinTokens; // 매우 짧은 질문 - 최소값
+    } else if (userMessageLength < 50) {
+      return Math.round(autoMinTokens + range * 0.25); // 짧은 질문
+    } else if (userMessageLength < 100) {
+      return Math.round(autoMinTokens + range * 0.5); // 중간 질문
+    } else if (userMessageLength < 200) {
+      return Math.round(autoMinTokens + range * 0.75); // 긴 질문
+    } else {
+      return autoMaxTokensValue; // 매우 긴 질문 - 최대값
+    }
+  };
 
   // 리사이즈 핸들러
   const handleMouseDown = () => {
@@ -342,7 +452,10 @@ export const Chat: React.FC = () => {
 
     try {
       console.log("Sending message:", input);
-      const response = await chatAPI.chat(input, topP, temperature, maxTokens, repeatPenalty, nGpuLayers);
+      // Auto mode: 메시지 길이에 따라 동적으로 max_tokens 결정
+      const effectiveMaxTokens = autoMaxTokens ? calculateAutoMaxTokens(input.length) : maxTokens;
+      console.log(`Auto mode: ${autoMaxTokens}, Input length: ${input.length}, Effective max_tokens: ${effectiveMaxTokens}`);
+      const response = await chatAPI.chat(input, topP, temperature, effectiveMaxTokens, repeatPenalty, nGpuLayers);
       console.log("Chat API Response:", response);
 
       // 응답 처리 (여러 형식 지원)
@@ -359,22 +472,18 @@ export const Chat: React.FC = () => {
         responseText = "(응답 생성 중 오류가 발생했거나 응답이 비어있습니다)";
       }
 
-      // 최대 응답 길이 제한
-      if (responseText.length > maxResponseLength) {
-        responseText = responseText.substring(0, maxResponseLength) + "...(길이 초과로 생략)";
-      }
-
       // 디버그 정보 생성 및 저장
+      const effectiveTokensUsed = autoMaxTokens ? calculateAutoMaxTokens(input.length) : maxTokens;
       const debugInfoStr = `Request Parameters:
   • Temperature: ${temperature.toFixed(2)} (creativity: 0=deterministic, 2=creative)
   • Top P: ${topP.toFixed(2)} (diversity: 0=focused, 1=diverse)
-  • Max Tokens: ${maxTokens} (max response length in tokens)
+  • Max Tokens: ${autoMaxTokens ? `🤖 AUTO (${effectiveTokensUsed})` : maxTokens}
   • Repeat Penalty: ${repeatPenalty.toFixed(2)} (avoid repetition: 1.0=none, 2.0=strong)
   ${isGgufModel ? `• GPU Layers: ${nGpuLayers} (Metal GPU acceleration)` : ""}
   • Model: ${selectedModel} ${isGgufModel ? "(GGUF)" : "(HuggingFace)"}
 
 Response Details:
-  • Characters: ${responseText.length} / ${maxResponseLength}
+  • Characters: ${responseText.length}
   • Lines: ${responseText.split("\n").length}
   • Words: ${responseText.split(/\s+/).length}
   • Estimated Tokens: ~${Math.ceil(responseText.split(/\s+/).length * 1.3)}
@@ -459,9 +568,32 @@ Response Details:
               <div className="space-y-4">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.sender === "user" ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-100"}`}>
-                      <div className="markdown-content">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    <div className={`group relative max-w-xs lg:max-w-2xl px-4 py-2 rounded-lg ${msg.sender === "user" ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-100"}`}>
+                      {/* 복사 버튼 (Assistant 메시지만) */}
+                      {msg.sender === "assistant" && (
+                        <button
+                          onClick={() => copyToClipboard(msg.content, msg.id)}
+                          className={`absolute -top-8 right-0 px-2 py-1 rounded text-xs font-medium transition opacity-0 group-hover:opacity-100 ${
+                            copiedMessageId === msg.id
+                              ? "bg-green-600 text-white"
+                              : "bg-gray-600 text-gray-200 hover:bg-gray-500"
+                          }`}
+                          title="Copy message"
+                        >
+                          {copiedMessageId === msg.id ? "✓ Copied" : "📋 Copy"}
+                        </button>
+                      )}
+
+                      {/* 메시지 내용 - 적응형 높이 */}
+                      <div className="markdown-content max-h-96 overflow-y-auto">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code: CodeBlockRenderer as any,
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
                       </div>
                       <p className={`text-xs mt-1 ${msg.sender === "user" ? "text-blue-100" : "text-gray-400"}`}>{msg.timestamp}</p>
                     </div>
@@ -564,6 +696,21 @@ Response Details:
                   </div>
                 </div>
               )}
+
+              {/* 모델 로드 상태 표시 */}
+              {modelLoading && modelLoadStatus && (
+                <div className="mt-3 p-2 bg-blue-900 rounded border border-blue-600 text-xs">
+                  <p className="text-blue-200 mb-2 font-semibold">📥 로드 중...</p>
+                  <p className="text-blue-100 text-xs mb-2">{modelLoadStatus}</p>
+                  <div className="w-full bg-blue-800 rounded-full h-2">
+                    <div
+                      className="bg-blue-400 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min(modelLoadProgress, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-blue-300 mt-1 text-xs text-right">{Math.round(modelLoadProgress)}%</p>
+                </div>
+              )}
             </div>
 
             {/* 파라미터 설정 */}
@@ -605,11 +752,34 @@ Response Details:
 
                 {/* Max Tokens */}
                 <div className="bg-gray-700 rounded-lg p-3">
-                  <label className="text-sm font-bold text-white block mb-2">
-                    Max Tokens: <span className="text-green-400">{maxTokens}</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <input type="range" min="256" max="8192" step="256" value={maxTokens} onChange={(e) => setMaxTokens(parseInt(e.target.value))} className="flex-1" disabled={!selectedModel} />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-bold text-white">
+                      Max Tokens: <span className={autoMaxTokens ? "text-yellow-400" : "text-green-400"}>{autoMaxTokens ? "🤖 AUTO" : maxTokens}</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={autoMaxTokens}
+                        onChange={(e) => setAutoMaxTokens(e.target.checked)}
+                        className="w-4 h-4"
+                        disabled={!selectedModel}
+                      />
+                      <span className="text-xs text-gray-300">Auto</span>
+                    </label>
+                  </div>
+
+                  {/* Manual Mode */}
+                  <div className={`flex gap-2 mb-3 ${autoMaxTokens ? "opacity-30 pointer-events-none" : "opacity-100"}`}>
+                    <input
+                      type="range"
+                      min="256"
+                      max="8192"
+                      step="256"
+                      value={maxTokens}
+                      onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                      className="flex-1"
+                      disabled={!selectedModel || autoMaxTokens}
+                    />
                     <input
                       type="number"
                       min="256"
@@ -618,33 +788,99 @@ Response Details:
                       value={maxTokens}
                       onChange={(e) => setMaxTokens(parseInt(e.target.value))}
                       className="w-20 bg-gray-600 text-white px-2 py-1 rounded border border-gray-500 focus:outline-none focus:border-green-500 text-sm"
-                      disabled={!selectedModel}
+                      disabled={!selectedModel || autoMaxTokens}
                     />
                   </div>
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <div className={`flex justify-between text-xs text-gray-400 mb-3 ${autoMaxTokens ? "opacity-30" : "opacity-100"}`}>
                     <span>256</span>
                     <span>8192</span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">💡 더 높은 값 = 더 길고 상세한 응답 (생성 시간 증가, 메모리 사용 증가)</p>
+
+                  {/* Auto Mode Settings */}
+                  {autoMaxTokens && (
+                    <div className="bg-gray-800 rounded p-2 mb-2 border border-yellow-500">
+                      <p className="text-xs font-bold text-yellow-400 mb-2">⚙️ Auto Mode 범위 설정</p>
+                      <div className="space-y-2">
+                        {/* Min Tokens */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-300 w-12">최소:</label>
+                          <input
+                            type="range"
+                            min="256"
+                            max={autoMaxTokensValue - 256}
+                            step="256"
+                            value={autoMinTokens}
+                            onChange={(e) => setAutoMinTokens(parseInt(e.target.value))}
+                            className="flex-1"
+                            disabled={!selectedModel}
+                          />
+                          <input
+                            type="number"
+                            min="256"
+                            max={autoMaxTokensValue - 256}
+                            step="256"
+                            value={autoMinTokens}
+                            onChange={(e) => setAutoMinTokens(parseInt(e.target.value))}
+                            className="w-16 bg-gray-700 text-white px-1 py-0.5 rounded border border-gray-500 text-xs"
+                            disabled={!selectedModel}
+                          />
+                        </div>
+
+                        {/* Max Tokens */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-300 w-12">최대:</label>
+                          <input
+                            type="range"
+                            min={autoMinTokens + 256}
+                            max="8192"
+                            step="256"
+                            value={autoMaxTokensValue}
+                            onChange={(e) => setAutoMaxTokensValue(parseInt(e.target.value))}
+                            className="flex-1"
+                            disabled={!selectedModel}
+                          />
+                          <input
+                            type="number"
+                            min={autoMinTokens + 256}
+                            max="8192"
+                            step="256"
+                            value={autoMaxTokensValue}
+                            onChange={(e) => setAutoMaxTokensValue(parseInt(e.target.value))}
+                            className="w-16 bg-gray-700 text-white px-1 py-0.5 rounded border border-gray-500 text-xs"
+                            disabled={!selectedModel}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-yellow-300 mt-2">💡 메시지 길이에 따라 {autoMinTokens}~{autoMaxTokensValue} 사이에서 자동 조정</p>
+                    </div>
+                  )}
+
+                  {autoMaxTokens ? (
+                    <p className="text-xs text-yellow-400">✨ Auto Mode: 메시지 길이에 따라 자동으로 조정됩니다</p>
+                  ) : (
+                    <p className="text-xs text-gray-400">💡 더 높은 값 = 더 길고 상세한 응답 (생성 시간 증가, 메모리 사용 증가)</p>
+                  )}
                 </div>
 
-                {/* Max Length */}
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <label className="text-sm font-bold text-white block mb-2">
-                    Max Response Length: <span className="text-blue-400">{maxResponseLength}</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="100"
-                    max="5000"
-                    step="100"
-                    value={maxResponseLength}
-                    onChange={(e) => setMaxResponseLength(parseInt(e.target.value))}
-                    className="w-full bg-gray-600 text-white px-2 py-1 rounded border border-gray-500 focus:outline-none focus:border-blue-500 text-sm"
-                    disabled={!selectedModel}
-                  />
-                  <p className="text-xs text-gray-400 mt-1">응답을 UI에 표시할 때의 최대 길이</p>
-                </div>
+                {/* Max Response Length - 선택적 (필요시만 사용) */}
+                <details className="bg-gray-700 rounded-lg p-3">
+                  <summary className="text-sm font-bold text-white cursor-pointer hover:text-gray-300">
+                    📏 Max Response Length (고급 설정)
+                  </summary>
+                  <div className="mt-3 pt-3 border-t border-gray-600 space-y-2">
+                    <input
+                      type="number"
+                      min="100"
+                      max="5000"
+                      step="100"
+                      value={maxResponseLength}
+                      onChange={(e) => setMaxResponseLength(parseInt(e.target.value))}
+                      className="w-full bg-gray-600 text-white px-2 py-1 rounded border border-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                      disabled={!selectedModel}
+                    />
+                    <p className="text-xs text-gray-400">💡 UI에 표시할 응답의 최대 길이 (일반적으로 필요 없음)</p>
+                  </div>
+                </details>
 
                 {/* N GPU Layers (GGUF만) */}
                 {isGgufModel && (
@@ -694,7 +930,9 @@ Response Details:
   "message": "...",
   "temperature": ${temperature.toFixed(2)},
   "top_p": ${topP.toFixed(2)},
-  "max_tokens": ${maxTokens},
+  "max_tokens": ${autoMaxTokens ? `auto (${autoMinTokens}-${autoMaxTokensValue})` : maxTokens},
+  "auto_mode": ${autoMaxTokens},
+  ${autoMaxTokens ? `"auto_min_tokens": ${autoMinTokens},\n  "auto_max_tokens": ${autoMaxTokensValue},\n  ` : ""}
   "repeat_penalty": ${repeatPenalty.toFixed(2)},
   "n_gpu_layers": ${nGpuLayers},
   "maintain_history": true,

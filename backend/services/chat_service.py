@@ -73,7 +73,7 @@ class ChatService:
         do_sample: bool = True,
         repetition_penalty: float = 1.0,
     ) -> Dict[str, Any]:
-        """텍스트 생성"""
+        """텍스트 생성 (HuggingFace Transformers용)"""
         try:
             if self.model is None or self.tokenizer is None:
                 raise ValueError("모델이 초기화되지 않았습니다.")
@@ -83,14 +83,18 @@ class ChatService:
                 prompt,
                 return_tensors="pt",
                 truncation=True,
-                max_length=1024,
+                max_length=2048,
             ).to(self.device)
 
-            # 생성
+            # max_length를 max_new_tokens로 변경 (더 정확한 제어)
+            input_token_count = inputs["input_ids"].shape[1]
+            max_new_tokens = min(max_length, 4096)
+
+            # 생성 (더 많은 토큰 생성 허용)
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
-                    max_length=max_length,
+                    max_new_tokens=max_new_tokens,
                     temperature=temperature,
                     top_p=top_p,
                     top_k=top_k,
@@ -98,28 +102,28 @@ class ChatService:
                     do_sample=do_sample,
                     repetition_penalty=repetition_penalty,
                     pad_token_id=self.tokenizer.eos_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id,
                 )
 
-            # 결과 디코딩
-            generated_text = self.tokenizer.decode(
-                outputs[0], skip_special_tokens=True
-            )
-
-            # 프롬프트 부분 제거
-            response_text = generated_text[len(prompt) :].strip()
+            # 결과 디코딩 (생성된 부분만)
+            generated_ids = outputs[0][input_token_count:]
+            response_text = self.tokenizer.decode(
+                generated_ids, skip_special_tokens=True
+            ).strip()
             
-            # 응답 정리
+            # 응답 정리 (너무 엄격하지 않게)
             response_text = self._cleanup_response(response_text)
 
             return {
                 "status": "success",
                 "response": response_text,
-                "full_text": generated_text,
-                "input_tokens": inputs["input_ids"].shape[1],
-                "output_tokens": outputs.shape[1],
+                "full_text": self.tokenizer.decode(outputs[0], skip_special_tokens=True),
+                "input_tokens": input_token_count,
+                "output_tokens": outputs.shape[1] - input_token_count,
             }
 
         except Exception as e:
+            logger.error(f"Generate failed: {str(e)}")
             raise RuntimeError(f"텍스트 생성 실패: {str(e)}")
 
     # ========================================
@@ -178,89 +182,57 @@ class ChatService:
             raise RuntimeError(f"채팅 실패: {str(e)}")
 
     def _build_context(self, use_history: bool = True) -> str:
-        """대화 컨텍스트 구성"""
+        """대화 컨텍스트 구성 (HuggingFace Transformers용)"""
+        context = ""
+        
+        # 시스템 프롬프트 추가
+        if self.system_prompt:
+            context += f"{self.system_prompt}\n\n"
+        
+        # 히스토리가 없으면 간단하게 처리
         if not use_history or len(self.conversation_history) == 0:
-            return self.system_prompt
+            return context.strip()
 
-        # 명확한 프롬프트 형식
-        context = f"{self.system_prompt}\n\n"
-        context += "### Conversation History\n"
+        # 최근 대화만 포함 (토큰 절약)
+        # 히스토리가 너무 길면 context window 문제 발생
+        recent_history = self.conversation_history[-6:]  # 최근 3개 왕복만
         
-        # 최근 10개 메시지까지만 포함 (더 많은 컨텍스트)
-        recent_history = self.conversation_history[-10:]
+        # 간단한 포맷으로 대화 히스토리 추가
+        for message in recent_history:
+            role_prefix = "User:" if message.role == "user" else "Assistant:"
+            context += f"{role_prefix} {message.content}\n"
         
-        for i, message in enumerate(recent_history):
-            if message.role == "user":
-                context += f"User: {message.content}\n"
-            else:
-                context += f"Assistant: {message.content}\n"
-        
-        # 명확한 구분자로 새로운 응답 요청
-        context += "\n### Current Response\nAssistant:"
-        return context
+        # 새로운 응답 준비
+        context += "Assistant:"
+        return context.strip()
 
     def _cleanup_response(self, response: str) -> str:
-        """응답 정리 - 반복 제거 및 포맷팅"""
+        """응답 정리 - 프롬프트 누출만 제거"""
         if not response:
             return response
         
         # 1. 기본 정리
         response = response.strip()
         
-        # 2. "User:" 또는 "Assistant:" 포함된 부분은 제거 (프롬프트 누출 방지)
+        # 2. 프롬프트 구조가 포함되어 있으면 그 부분까지만 추출
         lines = response.split('\n')
         result_lines = []
+        
         for line in lines:
-            line = line.strip()
-            # 프롬프트 구조 제거
-            if line.startswith(('User:', 'Assistant:', 'A:', 'U:', '###', 'Assistant')):
-                continue
-            if not line:
-                continue
+            line_stripped = line.strip()
+            
+            # 프롬프트 마커가 나타나면 거기서 중단
+            if line_stripped.startswith(('User:', 'Assistant:', '###', 'Current Response')):
+                break
+            
             result_lines.append(line)
         
-        # 3. 반복 제거 (더 정교한 감지)
-        final_lines = []
-        for line in result_lines:
-            # 이미 있는 문장과 정확히 같은지 확인
-            if line in final_lines:
-                continue
-            
-            # 유사한 문장 제거 (단어 유사도)
-            is_repetitive = False
-            if len(final_lines) >= 1:
-                # 마지막 문장과 비교
-                last_line = final_lines[-1]
-                # 50% 이상 단어가 겹치면 반복으로 판단
-                last_words = set(last_line.lower().split())
-                current_words = set(line.lower().split())
-                if len(last_words) > 0 and len(current_words) > 0:
-                    overlap = len(last_words & current_words) / max(len(last_words), len(current_words))
-                    if overlap > 0.5:
-                        is_repetitive = True
-            
-            if not is_repetitive:
-                final_lines.append(line)
+        # 3. 결과 생성
+        result = '\n'.join(result_lines).strip()
         
-        # 4. 첫 2줄만 사용 (더 짧게)
-        if len(final_lines) > 2:
-            final_lines = final_lines[:2]
-        
-        # 5. 결과 생성
-        result = ' '.join(final_lines)
-        
-        # 6. 한글 문장 길이 제한 (너무 길면 끝내기)
-        if len(result) > 200:  # 약 100자 한글
-            result = result[:200] + '...'
-        
-        # 7. 마침표 추가
-        if result and not result.endswith(('。', '。', '.', '!', '?', '?', '!', '...', '…')):
-            # 한글인 경우 마침표 추가
-            if any('\uac00' <= char <= '\ud7a3' for char in result):
-                if not result.endswith(('다', '요', '가', '네')):
-                    result += '다'
-            else:
-                result += '.'
+        # 4. 너무 짧으면 원본 반환
+        if len(result.split()) < 3:
+            return response
         
         return result
 

@@ -6,6 +6,10 @@ from fastapi.responses import StreamingResponse
 import json
 import logging
 import os
+import io
+import sys
+import threading
+from contextlib import redirect_stdout, redirect_stderr
 
 from pydantic import BaseModel, Field
 
@@ -15,6 +19,43 @@ from backend.config import settings
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["model"])
 model_service = ModelService()
+
+# HuggingFace 라이브러리 로그 캡처용
+class LogCapture(io.StringIO):
+    def __init__(self, callback):
+        super().__init__()
+        self.callback = callback
+        self.last_progress = 0
+    
+    def write(self, message):
+        if message and message.strip():
+            # "Loading checkpoint shards" 메시지 추출
+            if "Loading checkpoint shards" in message:
+                # 진행도 추출 (예: "0%", "25%", "50%", "75%", "100%")
+                import re
+                # 정규표현식으로 백분율 추출
+                match = re.search(r'(\d+)%', message)
+                if match:
+                    try:
+                        progress_pct = int(match.group(1))
+                        # 중복 진행도 피하기
+                        if progress_pct != self.last_progress and progress_pct % 25 == 0:
+                            self.last_progress = progress_pct
+                            # 진행도를 25-85% 범위로 매핑
+                            mapped_progress = 25 + (progress_pct / 100) * 60
+                            
+                            # 샤드 정보 추출 (예: "2/4")
+                            shard_match = re.search(r'(\d+)/(\d+)', message)
+                            shard_info = f" {shard_match.group(1)}/{shard_match.group(2)}" if shard_match else ""
+                            
+                            self.callback({
+                                "status": "loading_checkpoint",
+                                "message": f"체크포인트 로드 중{shard_info}... {progress_pct}%",
+                                "progress": mapped_progress
+                            })
+                    except Exception as e:
+                        logger.debug(f"로그 파싱 오류: {e}")
+        return super().write(message)
 
 # 글로벌 모델 캐시
 _MODEL_CACHE: Dict = {}
@@ -294,17 +335,69 @@ async def upload_model_stream(request_body: dict):
             if not is_gguf:
                 yield json.dumps({"status": "preparing", "message": "모델 파일 준비 중...", "progress": 15}).encode() + b'\n'
                 
-                # 토크나이저 로드 시작
-                yield json.dumps({"status": "loading_tokenizer", "message": "토크나이저 로드 중...", "progress": 25}).encode() + b'\n'
-                
                 model_service_instance = model_service
                 
-                # 모델과 토크나이저 로드 (실제 작업)
-                model, tokenizer, metadata = model_service_instance.load_local(model_path)
+                # 진행 정보를 실시간으로 스트리밍하기 위한 큐
+                progress_queue = []
                 
-                yield json.dumps({"status": "model_loading", "message": "모델 로드 중...", "progress": 65}).encode() + b'\n'
+                def stream_progress(progress_data):
+                    """진행 정보를 큐에 추가"""
+                    progress_queue.append(progress_data)
                 
-                yield json.dumps({"status": "initializing", "message": "모델 초기화 중...", "progress": 85}).encode() + b'\n'
+                # 로그 캡처용 콜백
+                def log_callback(log_data):
+                    """로그에서 진행 정보 추출"""
+                    yield_data = {
+                        "status": log_data.get("status"),
+                        "message": log_data.get("message"),
+                        "progress": log_data.get("progress")
+                    }
+                    progress_queue.append(yield_data)
+                
+                # 표준 출력/에러를 캡처하는 스트림
+                log_capture = LogCapture(log_callback)
+                
+                # 모델과 토크나이저 로드 (로그 캡처와 함께)
+                model = None
+                tokenizer = None
+                metadata = None
+                
+                try:
+                    with redirect_stdout(log_capture), redirect_stderr(log_capture):
+                        model, tokenizer, metadata = model_service_instance.load_local(model_path, stream_progress)
+                except Exception as e:
+                    logger.error(f"Model load failed during streaming: {str(e)}")
+                    
+                    # 수집된 진행 정보를 모두 스트리밍
+                    for update in progress_queue:
+                        yield json.dumps({
+                            "status": update.get("status"),
+                            "message": update.get("message"),
+                            "progress": update.get("progress")
+                        }).encode() + b'\n'
+                    
+                    # 오류 메시지 전송
+                    yield json.dumps({
+                        "status": "error",
+                        "message": f"❌ 모델 로드 실패: {str(e)}"
+                    }).encode() + b'\n'
+                    return
+                
+                # 수집된 진행 정보를 모두 스트리밍
+                for update in progress_queue:
+                    yield json.dumps({
+                        "status": update.get("status"),
+                        "message": update.get("message"),
+                        "progress": update.get("progress")
+                    }).encode() + b'\n'
+                
+                # 모델 로드 성공 확인
+                if model is None or tokenizer is None or metadata is None:
+                    yield json.dumps({
+                        "status": "error",
+                        "message": "❌ 모델 로드 실패: 변수가 정의되지 않았습니다"
+                    }).encode() + b'\n'
+                    return
                 
                 # 모델 캐시에 저장
                 _MODEL_CACHE.update({

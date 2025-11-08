@@ -28,16 +28,16 @@ code {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* Markdown 스타일 */
@@ -127,4 +127,19 @@ code {
 
 .markdown-content table th {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 메시지 박스 적응형 높이 */
+.markdown-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 코드 블록 호버 효과 */
+.markdown-content pre {
+  position: relative;
+}
+
+.markdown-content pre:hover {
+  background-color: rgba(0, 0, 0, 0.6);
 }
