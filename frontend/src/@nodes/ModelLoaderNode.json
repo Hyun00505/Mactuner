@@ -1,0 +1,149 @@
+{
+  "id": "model-loader",
+  "name": "Model Loader",
+  "icon": "🤖",
+  "category": "input",
+  "description": "모델을 HuggingFace Hub에서 다운로드하거나 로컬 저장소에서 로드합니다",
+  "color": "from-blue-500 to-blue-600",
+  "inputs": [
+    {
+      "id": "in-token",
+      "name": "Token",
+      "type": "input",
+      "dataType": "token",
+      "optional": true,
+      "visible": "download"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-model",
+      "name": "Model",
+      "type": "output",
+      "dataType": "model"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "source",
+      "name": "Source",
+      "type": "select",
+      "label": "모델 소스",
+      "value": "huggingface",
+      "options": [
+        {
+          "label": "🤗 HuggingFace Hub (다운로드)",
+          "value": "huggingface"
+        },
+        {
+          "label": "📂 로컬 저장소 (기존 모델)",
+          "value": "local"
+        }
+      ],
+      "required": true,
+      "description": "모델을 어디에서 로드할지 선택하세요"
+    },
+    {
+      "id": "modelId",
+      "name": "Model ID",
+      "type": "text",
+      "label": "모델 ID",
+      "value": "gpt2",
+      "placeholder": "예: gpt2, meta-llama/Llama-2-7b, google/flan-t5-base",
+      "required": true,
+      "description": "HuggingFace 모델 ID를 입력하세요 (HuggingFace Hub에서 검색 가능)",
+      "condition": {
+        "parameter": "source",
+        "operator": "equals",
+        "value": "huggingface"
+      }
+    },
+    {
+      "id": "localModel",
+      "name": "Local Model",
+      "type": "select",
+      "label": "모델 선택",
+      "value": "",
+      "placeholder": "로컬 모델을 선택하세요",
+      "required": true,
+      "description": "컴퓨터에 저장된 모델 목록에서 선택하세요 (자동 감지됨)",
+      "dynamicOptions": true,
+      "apiEndpoint": "/model/local-models",
+      "condition": {
+        "parameter": "source",
+        "operator": "equals",
+        "value": "local"
+      }
+    },
+    {
+      "id": "torchDtype",
+      "name": "Torch DType",
+      "type": "select",
+      "label": "Data Type",
+      "value": "auto",
+      "options": [
+        {
+          "label": "Auto",
+          "value": "auto"
+        },
+        {
+          "label": "Float32 (default)",
+          "value": "float32"
+        },
+        {
+          "label": "Float16",
+          "value": "float16"
+        },
+        {
+          "label": "BFloat16",
+          "value": "bfloat16"
+        }
+      ],
+      "required": false,
+      "description": "Torch data type for model loading"
+    },
+    {
+      "id": "deviceMap",
+      "name": "Device Map",
+      "type": "select",
+      "label": "Device Mapping",
+      "value": "auto",
+      "options": [
+        {
+          "label": "Auto",
+          "value": "auto"
+        },
+        {
+          "label": "CPU",
+          "value": "cpu"
+        },
+        {
+          "label": "GPU",
+          "value": "gpu"
+        }
+      ],
+      "required": false,
+      "description": "How to map model to devices"
+    },
+    {
+      "id": "trustRemoteCode",
+      "name": "Trust Remote Code",
+      "type": "checkbox",
+      "label": "Trust Remote Code",
+      "value": false,
+      "required": false,
+      "description": "Trust remote code execution (required for some models)"
+    },
+    {
+      "id": "cacheDir",
+      "name": "Cache Directory",
+      "type": "text",
+      "label": "Cache Directory",
+      "value": "~/.cache/huggingface/hub",
+      "placeholder": "Cache directory path",
+      "required": false,
+      "description": "Where to cache downloaded models"
+    }
+  ]
+}
+

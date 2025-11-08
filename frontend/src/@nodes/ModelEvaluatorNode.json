@@ -1,0 +1,57 @@
+{
+  "id": "model-evaluator",
+  "name": "Model Evaluator",
+  "icon": "📊",
+  "category": "process",
+  "description": "학습된 모델의 성능을 평가합니다",
+  "color": "from-green-500 to-green-600",
+  "inputs": [
+    {
+      "id": "in-model",
+      "name": "Model",
+      "type": "input",
+      "dataType": "model",
+      "optional": false
+    },
+    {
+      "id": "in-dataset",
+      "name": "Test Dataset",
+      "type": "input",
+      "dataType": "dataset",
+      "optional": false
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-results",
+      "name": "Evaluation Results",
+      "type": "output",
+      "dataType": "config"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "metrics",
+      "name": "Metrics",
+      "type": "text",
+      "label": "평가 지표",
+      "value": "perplexity,accuracy",
+      "placeholder": "perplexity,accuracy,bleu,rouge",
+      "required": true,
+      "description": "사용할 평가 지표 (쉼표로 구분)"
+    },
+    {
+      "id": "evalBatchSize",
+      "name": "Eval Batch Size",
+      "type": "number",
+      "label": "평가 배치 크기",
+      "value": 8,
+      "min": 1,
+      "max": 64,
+      "step": 1,
+      "required": true,
+      "description": "평가 시 사용할 배치 크기"
+    }
+  ]
+}
+

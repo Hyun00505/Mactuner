@@ -1,0 +1,171 @@
+{
+  "id": "training-config",
+  "name": "Training Config",
+  "icon": "⚙️",
+  "category": "config",
+  "description": "학습 하이퍼파라미터를 설정합니다",
+  "color": "from-indigo-500 to-indigo-600",
+  "inputs": [],
+  "outputs": [
+    {
+      "id": "out-config",
+      "name": "Training Config",
+      "type": "output",
+      "dataType": "config"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "epochs",
+      "name": "Epochs",
+      "type": "number",
+      "label": "에포크 수",
+      "value": 3,
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "required": true,
+      "description": "전체 데이터셋을 몇 번 반복 학습할지"
+    },
+    {
+      "id": "batchSize",
+      "name": "Batch Size",
+      "type": "number",
+      "label": "배치 크기",
+      "value": 4,
+      "min": 1,
+      "max": 128,
+      "step": 1,
+      "required": true,
+      "description": "한 번에 처리할 샘플 수"
+    },
+    {
+      "id": "learningRate",
+      "name": "Learning Rate",
+      "type": "number",
+      "label": "학습률",
+      "value": 0.00005,
+      "min": 0.000001,
+      "max": 0.1,
+      "step": 0.000001,
+      "required": true,
+      "description": "학습률 (권장: 1e-5 ~ 5e-5)"
+    },
+    {
+      "id": "warmupSteps",
+      "name": "Warmup Steps",
+      "type": "number",
+      "label": "워밍업 스텝",
+      "value": 500,
+      "min": 0,
+      "max": 10000,
+      "step": 100,
+      "required": true,
+      "description": "학습률을 점진적으로 증가시키는 스텝 수"
+    },
+    {
+      "id": "maxGradNorm",
+      "name": "Max Gradient Norm",
+      "type": "number",
+      "label": "최대 그래디언트 노름",
+      "value": 1.0,
+      "min": 0.1,
+      "max": 10.0,
+      "step": 0.1,
+      "required": true,
+      "description": "그래디언트 클리핑 임계값"
+    },
+    {
+      "id": "saveStrategy",
+      "name": "Save Strategy",
+      "type": "select",
+      "label": "저장 전략",
+      "value": "epoch",
+      "options": [
+        {
+          "label": "매 에포크마다 저장",
+          "value": "epoch"
+        },
+        {
+          "label": "특정 스텝마다 저장",
+          "value": "steps"
+        },
+        {
+          "label": "저장 안 함",
+          "value": "no"
+        }
+      ],
+      "required": true,
+      "description": "체크포인트 저장 전략"
+    },
+    {
+      "id": "saveSteps",
+      "name": "Save Steps",
+      "type": "number",
+      "label": "저장 스텝 간격",
+      "value": 500,
+      "min": 10,
+      "max": 10000,
+      "step": 10,
+      "required": false,
+      "description": "스텝 전략 사용 시 저장 간격"
+    },
+    {
+      "id": "evalStrategy",
+      "name": "Eval Strategy",
+      "type": "select",
+      "label": "평가 전략",
+      "value": "epoch",
+      "options": [
+        {
+          "label": "매 에포크마다 평가",
+          "value": "epoch"
+        },
+        {
+          "label": "특정 스텝마다 평가",
+          "value": "steps"
+        },
+        {
+          "label": "평가 안 함",
+          "value": "no"
+        }
+      ],
+      "required": true,
+      "description": "모델 평가 전략"
+    },
+    {
+      "id": "evalSteps",
+      "name": "Eval Steps",
+      "type": "number",
+      "label": "평가 스텝 간격",
+      "value": 500,
+      "min": 10,
+      "max": 10000,
+      "step": 10,
+      "required": false,
+      "description": "스텝 전략 사용 시 평가 간격"
+    },
+    {
+      "id": "loggingSteps",
+      "name": "Logging Steps",
+      "type": "number",
+      "label": "로깅 스텝 간격",
+      "value": 10,
+      "min": 1,
+      "max": 1000,
+      "step": 1,
+      "required": true,
+      "description": "로그를 출력할 스텝 간격"
+    },
+    {
+      "id": "outputDir",
+      "name": "Output Directory",
+      "type": "text",
+      "label": "출력 디렉토리",
+      "value": "./output",
+      "required": true,
+      "description": "학습 결과를 저장할 디렉토리"
+    }
+  ]
+}
+

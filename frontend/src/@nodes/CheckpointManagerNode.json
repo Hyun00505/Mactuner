@@ -1,0 +1,90 @@
+{
+  "id": "checkpoint-manager",
+  "name": "Checkpoint Manager",
+  "icon": "💾",
+  "category": "process",
+  "description": "학습 중 생성된 체크포인트를 관리합니다",
+  "color": "from-blue-500 to-blue-600",
+  "inputs": [
+    {
+      "id": "in-checkpoints",
+      "name": "Checkpoints",
+      "type": "input",
+      "dataType": "config",
+      "optional": false,
+      "description": "학습에서 생성된 체크포인트 정보"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-best",
+      "name": "Best Checkpoint",
+      "type": "output",
+      "dataType": "model",
+      "description": "가장 좋은 성능의 체크포인트"
+    },
+    {
+      "id": "out-latest",
+      "name": "Latest Checkpoint",
+      "type": "output",
+      "dataType": "model",
+      "description": "가장 최근 체크포인트"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "maxCheckpoints",
+      "name": "Max Checkpoints",
+      "type": "number",
+      "label": "최대 체크포인트 수",
+      "value": 5,
+      "min": 1,
+      "max": 20,
+      "step": 1,
+      "required": true,
+      "description": "유지할 최대 체크포인트 수"
+    },
+    {
+      "id": "keepBest",
+      "name": "Keep Best",
+      "type": "checkbox",
+      "label": "최고 성능 체크포인트 보관",
+      "value": true,
+      "required": false,
+      "description": "가장 좋은 성능의 체크포인트는 항상 보관"
+    },
+    {
+      "id": "saveStrategy",
+      "name": "Save Strategy",
+      "type": "select",
+      "label": "저장 전략",
+      "value": "best",
+      "options": [
+        {
+          "label": "최고 성능만",
+          "value": "best"
+        },
+        {
+          "label": "모두 저장",
+          "value": "all"
+        },
+        {
+          "label": "최신만",
+          "value": "last"
+        }
+      ],
+      "required": true,
+      "description": "체크포인트 저장 전략"
+    },
+    {
+      "id": "checkpointDir",
+      "name": "Checkpoint Directory",
+      "type": "text",
+      "label": "체크포인트 디렉토리",
+      "value": "./checkpoints",
+      "required": true,
+      "description": "체크포인트를 저장할 디렉토리"
+    }
+  ]
+}
+

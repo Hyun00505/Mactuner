@@ -4,6 +4,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { ModelDownload } from "./pages/ModelDownload";
 import { DataProcessing } from "./pages/DataProcessing";
 import { Chat } from "./pages/Chat";
+import { Editor } from "./pages/Editor";
 
 function App() {
   return (
@@ -14,8 +15,8 @@ function App() {
         <Route path="/model" element={<ModelDownload />} />
         <Route path="/data" element={<DataProcessing />} />
         <Route path="/chat" element={<Chat />} />
-        <Route path="/editor" element={<div className="p-8">에디터 (구현 중)</div>} />
-        <Route path="/editor/:id" element={<div className="p-8">에디터 (구현 중)</div>} />
+        <Route path="/editor" element={<Editor />} />
+        <Route path="/editor/:id" element={<Editor />} />
         <Route path="/history" element={<div className="p-8">히스토리 (구현 중)</div>} />
         <Route path="/api" element={<div className="p-8">API 문서 (구현 중)</div>} />
       </Routes>

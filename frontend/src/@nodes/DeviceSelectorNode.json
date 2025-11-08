@@ -1,0 +1,47 @@
+{
+  "id": "device-selector",
+  "name": "Device Selector",
+  "icon": "🖥️",
+  "category": "config",
+  "description": "학습에 사용할 디바이스(CPU/MPS/CUDA)를 선택합니다",
+  "color": "from-indigo-500 to-indigo-600",
+  "inputs": [],
+  "outputs": [
+    {
+      "id": "out-device",
+      "name": "Device",
+      "type": "output",
+      "dataType": "config"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "deviceType",
+      "name": "Device Type",
+      "type": "select",
+      "label": "디바이스 선택",
+      "value": "auto",
+      "options": [
+        {
+          "label": "자동 선택 (권장)",
+          "value": "auto"
+        },
+        {
+          "label": "CPU",
+          "value": "cpu"
+        },
+        {
+          "label": "MPS (Apple Silicon)",
+          "value": "mps"
+        },
+        {
+          "label": "CUDA",
+          "value": "cuda"
+        }
+      ],
+      "required": true,
+      "description": "학습에 사용할 디바이스 타입을 선택하세요"
+    }
+  ]
+}
+

@@ -1,0 +1,94 @@
+{
+  "id": "training",
+  "name": "Training",
+  "icon": "🎓",
+  "category": "process",
+  "description": "LoRA 또는 QLoRA를 사용하여 모델을 파인튜닝합니다",
+  "color": "from-indigo-500 to-indigo-600",
+  "inputs": [
+    {
+      "id": "in-model",
+      "name": "Model",
+      "type": "input",
+      "dataType": "model",
+      "optional": false
+    },
+    {
+      "id": "in-train-dataset",
+      "name": "Train Dataset",
+      "type": "input",
+      "dataType": "dataset",
+      "optional": false
+    },
+    {
+      "id": "in-val-dataset",
+      "name": "Validation Dataset",
+      "type": "input",
+      "dataType": "dataset",
+      "optional": true
+    },
+    {
+      "id": "in-training-config",
+      "name": "Training Config",
+      "type": "input",
+      "dataType": "config",
+      "optional": true
+    },
+    {
+      "id": "in-lora-config",
+      "name": "LoRA Config",
+      "type": "input",
+      "dataType": "config",
+      "optional": true
+    },
+    {
+      "id": "in-qlora-config",
+      "name": "QLoRA Config",
+      "type": "input",
+      "dataType": "config",
+      "optional": true
+    },
+    {
+      "id": "in-device",
+      "name": "Device",
+      "type": "input",
+      "dataType": "config",
+      "optional": true
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-trained-model",
+      "name": "Trained Model",
+      "type": "output",
+      "dataType": "model"
+    },
+    {
+      "id": "out-checkpoints",
+      "name": "Checkpoints",
+      "type": "output",
+      "dataType": "config"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "useLora",
+      "name": "Use LoRA",
+      "type": "checkbox",
+      "label": "LoRA 사용",
+      "value": true,
+      "required": false,
+      "description": "LoRA를 사용하여 파인튜닝"
+    },
+    {
+      "id": "useQlora",
+      "name": "Use QLoRA",
+      "type": "checkbox",
+      "label": "QLoRA 사용",
+      "value": false,
+      "required": false,
+      "description": "QLoRA를 사용하여 파인튜닝 (메모리 절약)"
+    }
+  ]
+}
+

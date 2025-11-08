@@ -76,9 +76,10 @@ export const DataProcessing: React.FC = () => {
         const response = await datasetAPI.info();
         console.log("📂 기존 데이터 응답:", response);
         
-        // 데이터가 없는 경우
+        // 데이터가 없는 경우 (정상, 에러 아님)
         if (!response.data || response.data.status === "no_data") {
-          console.log("📂 기존 데이터 없음 (정상)");
+          console.log("📂 기존 데이터 없음 (정상 상태)");
+          setMessage(""); // 메시지 초기화
           return;
         }
         

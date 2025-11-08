@@ -176,12 +176,14 @@ async def get_full_data(limit: Optional[int] = Query(None), offset: int = Query(
         return {"status": "success", "data": data}
     except ValueError as e:
         print(f"❌ [GET /full-data] ValueError: {str(e)}")
-        return {"status": "no_data", "data": None, "message": str(e)}
+        # 데이터가 없으면 빈 결과 반환 (에러 대신)
+        return {"status": "no_data", "data": {"rows": [], "total_rows": 0, "columns": [], "dtypes": {}}, "message": str(e)}
     except Exception as e:
         print(f"❌ [GET /full-data] Exception: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=str(e))
+        # 에러 대신 빈 결과 반환
+        return {"status": "no_data", "data": {"rows": [], "total_rows": 0, "columns": [], "dtypes": {}}, "message": str(e)}
 
 
 # ========================================
@@ -473,5 +475,155 @@ async def download_hf_dataset(request: HFDownloadRequest) -> Dict:
             encoding=dataset_service.file_encoding,
         )
         return {"status": "success", "data": result}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ========================================
+# 로컬 데이터셋 목록
+# ========================================
+
+
+@router.get("/local-datasets")
+async def get_local_datasets() -> Dict:
+    """로컬에 있는 데이터셋 목록 조회 (히스토리 기반)"""
+    try:
+        from pathlib import Path
+        import json
+        
+        datasets = []
+        history_file = Path(__file__).parent.parent.parent / "data" / "dataset_history.json"
+        
+        if history_file.exists():
+            try:
+                with open(history_file, "r") as f:
+                    history_data = json.load(f)
+                
+                # 히스토리 형식 처리 (배열 또는 객체)
+                history_list = []
+                if isinstance(history_data, list):
+                    # 배열 형식
+                    history_list = history_data
+                elif isinstance(history_data, dict) and "history" in history_data:
+                    # 객체 with "history" 키 형식
+                    history_list = history_data["history"]
+                
+                # 히스토리에서 데이터셋 정보 추출
+                for item in history_list:
+                    # 파일 업로드
+                    if item.get("source") in ["file", "upload"]:
+                        datasets.append({
+                            "dataset_id": item.get("filename") or item.get("file_name", "Unknown"),
+                            "source": "upload",
+                            "format": item.get("format", "unknown"),
+                            "timestamp": item.get("timestamp", ""),
+                            "size_mb": item.get("size_mb", 0),
+                            "rows": item.get("rows", 0),
+                            "columns": item.get("columns", 0),
+                        })
+                    # HuggingFace 데이터셋
+                    elif item.get("source") == "hf":
+                        datasets.append({
+                            "dataset_id": item.get("hf_dataset_id", "Unknown"),
+                            "source": "huggingface",
+                            "split": item.get("hf_split", "train"),
+                            "timestamp": item.get("timestamp", ""),
+                            "rows": item.get("rows", 0),
+                            "columns": item.get("columns", 0),
+                            "format": item.get("format", "HuggingFace Dataset"),
+                        })
+                
+                print(f"✅ 로컬 데이터셋 조회 완료: {len(datasets)}개 발견")
+            except Exception as e:
+                print(f"⚠️ 히스토리 파일 읽기 오류: {str(e)}")
+        else:
+            print(f"⚠️ 히스토리 파일 없음: {history_file}")
+        
+        return {"status": "success", "datasets": datasets}
+    
+    except Exception as e:
+        print(f"❌ 로컬 데이터셋 조회 오류: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "success", "datasets": []}  # 에러도 빈 배열 반환
+
+
+@router.post("/load-by-id")
+async def load_dataset_by_id(request: Dict) -> Dict:
+    """데이터셋 ID로 데이터셋 로드"""
+    try:
+        dataset_id = request.get("dataset_id")
+        if not dataset_id:
+            raise ValueError("dataset_id가 필요합니다")
+        
+        from pathlib import Path
+        import json
+        
+        history_file = Path(__file__).parent.parent.parent / "data" / "dataset_history.json"
+        
+        if not history_file.exists():
+            raise ValueError("히스토리 파일이 없습니다")
+        
+        with open(history_file, "r") as f:
+            history_data = json.load(f)
+        
+        # 히스토리 형식 처리
+        history_list = []
+        if isinstance(history_data, list):
+            history_list = history_data
+        elif isinstance(history_data, dict) and "history" in history_data:
+            history_list = history_data["history"]
+        
+        # 데이터셋 ID로 히스토리에서 찾기
+        dataset_item = None
+        for item in history_list:
+            # 파일 업로드
+            if item.get("source") in ["file", "upload"]:
+                if item.get("filename") == dataset_id or item.get("file_name") == dataset_id:
+                    dataset_item = item
+                    break
+            # HuggingFace 데이터셋
+            elif item.get("source") == "hf":
+                if item.get("hf_dataset_id") == dataset_id:
+                    dataset_item = item
+                    break
+        
+        if not dataset_item:
+            raise ValueError(f"데이터셋 ID '{dataset_id}'를 찾을 수 없습니다")
+        
+        # 소스에 따라 다르게 처리
+        if dataset_item.get("source") == "hf":
+            # HuggingFace 데이터셋 다시 로드
+            result = dataset_service.download_hf_dataset(
+                dataset_id=dataset_item.get("hf_dataset_id"),
+                hf_token=dataset_item.get("hf_token"),
+                split=dataset_item.get("hf_split", "train"),
+                max_samples=dataset_item.get("hf_max_samples"),
+            )
+            return {"status": "success", "message": f"데이터셋 '{dataset_id}' 로드 완료", "data": result}
+        else:
+            # 파일 기반 데이터셋은 파일 경로에서 로드
+            # 파일 경로가 없으면 에러 (파일은 메모리에만 있으므로 재업로드 필요)
+            file_path = dataset_item.get("file_path") or dataset_item.get("filename") or dataset_item.get("file_name")
+            if not file_path:
+                raise ValueError("파일 경로를 찾을 수 없습니다. 파일 기반 데이터셋은 재업로드가 필요합니다.")
+            
+            # 파일 경로가 상대 경로인 경우 절대 경로로 변환
+            if not Path(file_path).is_absolute():
+                # data 폴더에서 찾기
+                data_dir = Path(__file__).parent.parent.parent / "data"
+                file_path = data_dir / file_path
+            
+            if not Path(file_path).exists():
+                raise ValueError(f"파일을 찾을 수 없습니다: {file_path}. 파일 기반 데이터셋은 재업로드가 필요합니다.")
+            
+            # 파일 읽기
+            with open(file_path, "rb") as f:
+                file_content = f.read()
+            
+            # 데이터셋 로드
+            result = dataset_service.load_dataset(file_content, Path(file_path).name)
+            return {"status": "success", "message": f"데이터셋 '{dataset_id}' 로드 완료", "data": result[1]}
+    
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

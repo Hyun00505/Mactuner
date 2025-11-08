@@ -143,3 +143,27 @@ code {
 .markdown-content pre:hover {
   background-color: rgba(0, 0, 0, 0.6);
 }
+
+/* 연결선 애니메이션 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes dashflow {
+  0% {
+    stroke-dashoffset: 10;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* 드래그 중인 연결선 애니메이션 */
+svg path[stroke="#fbbf24"] {
+  animation: dashflow 0.6s linear infinite;
+}

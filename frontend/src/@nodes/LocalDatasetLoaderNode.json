@@ -1,0 +1,31 @@
+{
+  "id": "local-dataset-loader",
+  "name": "Local Dataset Loader",
+  "icon": "📂",
+  "category": "input",
+  "description": "로컬 저장소에서 데이터셋을 로드합니다",
+  "color": "from-green-500 to-green-600",
+  "inputs": [],
+  "outputs": [
+    {
+      "id": "out-dataset",
+      "name": "Dataset",
+      "type": "output",
+      "dataType": "dataset"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "datasetPath",
+      "name": "Dataset Path",
+      "type": "select",
+      "label": "로컬 데이터셋 선택",
+      "value": "",
+      "dynamicOptions": true,
+      "apiEndpoint": "/dataset/local-datasets",
+      "required": true,
+      "description": "로컬에 저장된 데이터셋을 선택하세요"
+    }
+  ]
+}
+

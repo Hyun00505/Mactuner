@@ -1,0 +1,83 @@
+{
+  "id": "dataset-filter",
+  "name": "Dataset Filter",
+  "icon": "🔍",
+  "category": "process",
+  "description": "데이터셋을 필터링하여 품질이 낮은 데이터를 제거합니다",
+  "color": "from-purple-500 to-purple-600",
+  "inputs": [
+    {
+      "id": "in-dataset",
+      "name": "Dataset",
+      "type": "input",
+      "dataType": "dataset",
+      "optional": false
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-dataset",
+      "name": "Filtered Dataset",
+      "type": "output",
+      "dataType": "dataset"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "filterType",
+      "name": "Filter Type",
+      "type": "select",
+      "label": "필터 타입",
+      "value": "length",
+      "options": [
+        {
+          "label": "길이 필터",
+          "value": "length"
+        },
+        {
+          "label": "품질 필터",
+          "value": "quality"
+        },
+        {
+          "label": "커스텀 필터",
+          "value": "custom"
+        }
+      ],
+      "required": true,
+      "description": "사용할 필터 타입 선택"
+    },
+    {
+      "id": "minLength",
+      "name": "Min Length",
+      "type": "number",
+      "label": "최소 길이",
+      "value": 10,
+      "min": 1,
+      "max": 1000,
+      "required": false,
+      "description": "최소 토큰 길이 (길이 필터 사용 시)"
+    },
+    {
+      "id": "maxLength",
+      "name": "Max Length",
+      "type": "number",
+      "label": "최대 길이",
+      "value": 2048,
+      "min": 1,
+      "max": 10000,
+      "required": false,
+      "description": "최대 토큰 길이 (길이 필터 사용 시)"
+    },
+    {
+      "id": "filterExpression",
+      "name": "Filter Expression",
+      "type": "textarea",
+      "label": "필터 표현식",
+      "value": "",
+      "placeholder": "예: len(text) > 50 and 'quality' in metadata",
+      "required": false,
+      "description": "커스텀 필터 사용 시 Python 표현식 입력"
+    }
+  ]
+}
+

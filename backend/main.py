@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import settings
-from backend.api import chat_interface, dataset_tools, export_gguf, model_loader, rag_pipeline, training
+from backend.api import chat_interface, dataset_tools, export_gguf, model_loader, rag_pipeline, training, device_selector, workflow
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -37,12 +37,14 @@ app.add_middleware(
 # ========================================
 # API 라우터 등록
 # ========================================
+app.include_router(device_selector.router, prefix="/device", tags=["Device"])
 app.include_router(model_loader.router, prefix="/model", tags=["Model"])
 app.include_router(dataset_tools.router, prefix="/dataset", tags=["Dataset"])
 app.include_router(training.router, prefix="/train", tags=["Training"])
 app.include_router(chat_interface.router, prefix="/chat", tags=["Chat"])
 app.include_router(rag_pipeline.router, prefix="/rag", tags=["RAG"])
 app.include_router(export_gguf.router, prefix="/gguf", tags=["GGUF"])
+app.include_router(workflow.router, prefix="/workflow", tags=["Workflow"])
 
 # ========================================
 # 추가 라우터 (향후)

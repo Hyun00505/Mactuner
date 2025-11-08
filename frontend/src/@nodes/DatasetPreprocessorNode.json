@@ -1,0 +1,226 @@
+{
+  "id": "dataset-preprocessor",
+  "name": "Dataset Preprocessor",
+  "icon": "🔧",
+  "category": "process",
+  "description": "데이터셋을 토큰화하고 학습에 적합한 형식으로 전처리합니다",
+  "color": "from-purple-500 to-purple-600",
+  "inputs": [
+    {
+      "id": "in-dataset",
+      "name": "Dataset",
+      "type": "input",
+      "dataType": "dataset",
+      "optional": false
+    },
+    {
+      "id": "in-model",
+      "name": "Model",
+      "type": "input",
+      "dataType": "model",
+      "optional": true,
+      "description": "토크나이저를 가져올 모델 (선택사항)"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-dataset",
+      "name": "Processed Dataset",
+      "type": "output",
+      "dataType": "dataset"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "format",
+      "name": "Format",
+      "type": "select",
+      "label": "데이터 형식",
+      "value": "instruction",
+      "options": [
+        {
+          "label": "Instruction (지시사항 형식)",
+          "value": "instruction"
+        },
+        {
+          "label": "Completion (완성 형식)",
+          "value": "completion"
+        },
+        {
+          "label": "Chat (대화 형식)",
+          "value": "chat"
+        }
+      ],
+      "required": true,
+      "description": "데이터셋의 형식 선택\n- Instruction: Input 컬럼(들)을 합쳐서 instruction으로, Output 컬럼(들)을 합쳐서 response로 사용 (예: 질문-답변, 지시-응답)\n- Completion: 단일 텍스트 컬럼을 사용하여 다음 토큰 예측 학습\n- Chat: 대화 형식 (system/user/assistant 구조)"
+    },
+    {
+      "id": "inputColumns",
+      "name": "Input Columns",
+      "type": "checkbox-group",
+      "label": "입력 컬럼",
+      "value": [],
+      "options": [],
+      "required": false,
+      "description": "입력으로 사용할 컬럼을 선택하세요 (하나 이상 선택)",
+      "dynamic": true,
+      "dynamicSource": "dataset-columns",
+      "visibleWhen": {
+        "format": "instruction"
+      }
+    },
+    {
+      "id": "outputColumns",
+      "name": "Output Columns",
+      "type": "checkbox-group",
+      "label": "출력 컬럼",
+      "value": [],
+      "options": [],
+      "required": false,
+      "description": "출력으로 사용할 컬럼을 선택하세요 (하나 이상 선택)",
+      "dynamic": true,
+      "dynamicSource": "dataset-columns",
+      "visibleWhen": {
+        "format": "instruction"
+      }
+    },
+    {
+      "id": "outputSeparator",
+      "name": "Output Separator",
+      "type": "text",
+      "label": "출력 컬럼 구분자",
+      "value": "\\n",
+      "placeholder": "\\n (줄바꿈) 또는 \\t (탭) 등",
+      "required": false,
+      "description": "여러 출력 컬럼을 합칠 때 사용할 구분자",
+      "visibleWhen": {
+        "format": "instruction"
+      }
+    },
+    {
+      "id": "textColumn",
+      "name": "Text Column",
+      "type": "select",
+      "label": "텍스트 컬럼",
+      "value": "",
+      "options": [],
+      "required": false,
+      "description": "학습에 사용할 단일 텍스트 컬럼을 선택하세요",
+      "dynamic": true,
+      "dynamicSource": "dataset-columns",
+      "visibleWhen": {
+        "format": "completion"
+      }
+    },
+    {
+      "id": "userColumn",
+      "name": "User Column",
+      "type": "select",
+      "label": "User 컬럼",
+      "value": "",
+      "options": [],
+      "required": false,
+      "description": "사용자 메시지 컬럼을 선택하세요",
+      "dynamic": true,
+      "dynamicSource": "dataset-columns",
+      "visibleWhen": {
+        "format": "chat"
+      }
+    },
+    {
+      "id": "assistantColumn",
+      "name": "Assistant Column",
+      "type": "select",
+      "label": "Assistant 컬럼",
+      "value": "",
+      "options": [],
+      "required": false,
+      "description": "어시스턴트 응답 컬럼을 선택하세요",
+      "dynamic": true,
+      "dynamicSource": "dataset-columns",
+      "visibleWhen": {
+        "format": "chat"
+      }
+    },
+    {
+      "id": "systemColumn",
+      "name": "System Column",
+      "type": "select",
+      "label": "System 컬럼 (선택사항)",
+      "value": "",
+      "options": [],
+      "required": false,
+      "description": "시스템 프롬프트 컬럼을 선택하세요 (없으면 기본값 사용)",
+      "dynamic": true,
+      "dynamicSource": "dataset-columns",
+      "visibleWhen": {
+        "format": "chat"
+      }
+    },
+    {
+      "id": "tokenizerName",
+      "name": "Tokenizer Name",
+      "type": "text",
+      "label": "토크나이저 이름",
+      "value": "",
+      "placeholder": "auto (모델에서 자동 감지)",
+      "required": false,
+      "description": "사용할 토크나이저 이름 (비워두면 모델에서 자동 감지)"
+    },
+    {
+      "id": "maxLength",
+      "name": "Max Length",
+      "type": "number",
+      "label": "최대 길이",
+      "value": 512,
+      "min": 64,
+      "max": 4096,
+      "step": 64,
+      "required": true,
+      "description": "토큰화할 최대 길이"
+    },
+    {
+      "id": "padding",
+      "name": "Padding",
+      "type": "select",
+      "label": "패딩 방식",
+      "value": "max_length",
+      "options": [
+        {
+          "label": "최대 길이로 패딩",
+          "value": "max_length"
+        },
+        {
+          "label": "가장 긴 시퀀스 길이로 패딩",
+          "value": "longest"
+        },
+        {
+          "label": "패딩 없음",
+          "value": "do_not_pad"
+        }
+      ],
+      "required": true,
+      "description": "패딩 방식 선택"
+    },
+    {
+      "id": "truncation",
+      "name": "Truncation",
+      "type": "checkbox",
+      "label": "길이 초과 시 자르기",
+      "value": true,
+      "required": false,
+      "description": "최대 길이를 초과하는 시퀀스를 자릅니다"
+    },
+    {
+      "id": "template",
+      "name": "Template",
+      "type": "textarea",
+      "label": "템플릿 (선택사항)",
+      "value": "",
+      "placeholder": "예: Input: {input}\nOutput: {output}",
+      "required": false,
+      "description": "데이터 포맷팅 템플릿 (비워두면 기본 템플릿 사용). {input}과 {output}을 사용할 수 있습니다."
+    }
+  ]
+}
+

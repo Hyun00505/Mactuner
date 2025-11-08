@@ -1,0 +1,368 @@
+{
+  "id": "workflow_1762599420779",
+  "name": "Korean Dialog Fine-tuning (gemma-3-1b-it)",
+  "description": "Korean_dialog 데이터셋을 google/gemma-3-1b-it 모델에 학습시키는 워크플로우",
+  "createdAt": 1762599420779,
+  "updatedAt": 1762599420779,
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "node_model_1",
+      "type": "local-model-loader",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "modelPath": "google/gemma-3-1b-it"
+      },
+      "ports": [
+        {
+          "id": "out-model",
+          "name": "Model",
+          "type": "output",
+          "dataType": "model"
+        }
+      ],
+      "status": "idle"
+    },
+    {
+      "id": "node_dataset_1",
+      "type": "local-dataset-loader",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "datasetPath": "jungsungmoon/Korean_dialog"
+      },
+      "ports": [
+        {
+          "id": "out-dataset",
+          "name": "Dataset",
+          "type": "output",
+          "dataType": "dataset"
+        }
+      ],
+      "status": "idle"
+    },
+    {
+      "id": "node_preprocessor_1",
+      "type": "dataset-preprocessor",
+      "position": {
+        "x": 400,
+        "y": 250
+      },
+      "data": {
+        "tokenizerName": "",
+        "maxLength": 512,
+        "padding": "max_length",
+        "truncation": true,
+        "format": "instruction",
+        "template": ""
+      },
+      "ports": [
+        {
+          "id": "in-dataset",
+          "name": "Dataset",
+          "type": "input",
+          "dataType": "dataset"
+        },
+        {
+          "id": "in-model",
+          "name": "Tokenizer Model",
+          "type": "input",
+          "dataType": "model",
+          "optional": true
+        },
+        {
+          "id": "out-dataset",
+          "name": "Processed Dataset",
+          "type": "output",
+          "dataType": "dataset"
+        }
+      ],
+      "status": "idle"
+    },
+    {
+      "id": "node_splitter_1",
+      "type": "dataset-splitter",
+      "position": {
+        "x": 700,
+        "y": 250
+      },
+      "data": {
+        "trainRatio": 80,
+        "valRatio": 10,
+        "testRatio": 10,
+        "shuffle": true,
+        "seed": 42
+      },
+      "ports": [
+        {
+          "id": "in-dataset",
+          "name": "Dataset",
+          "type": "input",
+          "dataType": "dataset"
+        },
+        {
+          "id": "out-train",
+          "name": "Train Dataset",
+          "type": "output",
+          "dataType": "dataset"
+        },
+        {
+          "id": "out-val",
+          "name": "Validation Dataset",
+          "type": "output",
+          "dataType": "dataset"
+        },
+        {
+          "id": "out-test",
+          "name": "Test Dataset",
+          "type": "output",
+          "dataType": "dataset"
+        }
+      ],
+      "status": "idle"
+    },
+    {
+      "id": "node_lora_1",
+      "type": "lora-config",
+      "position": {
+        "x": 400,
+        "y": 100
+      },
+      "data": {
+        "rank": 8,
+        "alpha": 16,
+        "dropout": 0.1,
+        "targetModules": "q_proj,v_proj",
+        "bias": "none",
+        "taskType": "CAUSAL_LM"
+      },
+      "ports": [
+        {
+          "id": "out-config",
+          "name": "LoRA Config",
+          "type": "output",
+          "dataType": "config"
+        }
+      ],
+      "status": "idle"
+    },
+    {
+      "id": "node_training_config_1",
+      "type": "training-config",
+      "position": {
+        "x": 700,
+        "y": 100
+      },
+      "data": {
+        "epochs": 3,
+        "batchSize": 4,
+        "learningRate": 5e-05,
+        "warmupSteps": 500,
+        "maxGradNorm": 1,
+        "saveStrategy": "epoch",
+        "saveSteps": 500,
+        "evalStrategy": "epoch",
+        "evalSteps": 500,
+        "loggingSteps": 10,
+        "outputDir": "./output"
+      },
+      "ports": [
+        {
+          "id": "out-config",
+          "name": "Training Config",
+          "type": "output",
+          "dataType": "config"
+        }
+      ],
+      "status": "idle"
+    },
+    {
+      "id": "node_training_1",
+      "type": "training",
+      "position": {
+        "x": 1000,
+        "y": 175
+      },
+      "data": {
+        "useLora": true,
+        "useQlora": false
+      },
+      "ports": [
+        {
+          "id": "in-model",
+          "name": "Model",
+          "type": "input",
+          "dataType": "model"
+        },
+        {
+          "id": "in-train-dataset",
+          "name": "Train Dataset",
+          "type": "input",
+          "dataType": "dataset"
+        },
+        {
+          "id": "in-val-dataset",
+          "name": "Validation Dataset",
+          "type": "input",
+          "dataType": "dataset",
+          "optional": true
+        },
+        {
+          "id": "in-training-config",
+          "name": "Training Config",
+          "type": "input",
+          "dataType": "config",
+          "optional": true
+        },
+        {
+          "id": "in-lora-config",
+          "name": "LoRA Config",
+          "type": "input",
+          "dataType": "config",
+          "optional": true
+        },
+        {
+          "id": "out-trained-model",
+          "name": "Trained Model",
+          "type": "output",
+          "dataType": "model"
+        },
+        {
+          "id": "out-checkpoints",
+          "name": "Checkpoints",
+          "type": "output",
+          "dataType": "config"
+        }
+      ],
+      "status": "idle"
+    },
+    {
+      "id": "node_saver_1",
+      "type": "model-saver",
+      "position": {
+        "x": 1300,
+        "y": 175
+      },
+      "data": {
+        "savePath": "./saved_models",
+        "saveFormat": "both",
+        "includeTokenizer": true,
+        "includeConfig": true
+      },
+      "ports": [
+        {
+          "id": "in-model",
+          "name": "Model",
+          "type": "input",
+          "dataType": "model"
+        },
+        {
+          "id": "out-path",
+          "name": "Saved Model Path",
+          "type": "output",
+          "dataType": "config"
+        }
+      ],
+      "status": "idle"
+    },
+    {
+      "id": "device-selector-1762596732655-btmqygcan",
+      "type": "device-selector",
+      "position": {
+        "x": 400,
+        "y": 400
+      },
+      "data": {
+        "deviceType": "auto"
+      },
+      "ports": [
+        {
+          "id": "out-device",
+          "name": "Device",
+          "type": "output",
+          "dataType": "config"
+        }
+      ],
+      "status": "idle"
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_1",
+      "source": "node_model_1",
+      "target": "node_training_1",
+      "sourcePort": "out-model",
+      "targetPort": "in-model",
+      "dataType": "model"
+    },
+    {
+      "id": "conn_2",
+      "source": "node_dataset_1",
+      "target": "node_preprocessor_1",
+      "sourcePort": "out-dataset",
+      "targetPort": "in-dataset",
+      "dataType": "dataset"
+    },
+    {
+      "id": "conn_3",
+      "source": "node_preprocessor_1",
+      "target": "node_splitter_1",
+      "sourcePort": "out-dataset",
+      "targetPort": "in-dataset",
+      "dataType": "dataset"
+    },
+    {
+      "id": "conn_4",
+      "source": "node_splitter_1",
+      "target": "node_training_1",
+      "sourcePort": "out-train",
+      "targetPort": "in-train-dataset",
+      "dataType": "dataset"
+    },
+    {
+      "id": "conn_5",
+      "source": "node_splitter_1",
+      "target": "node_training_1",
+      "sourcePort": "out-val",
+      "targetPort": "in-val-dataset",
+      "dataType": "dataset"
+    },
+    {
+      "id": "conn_6",
+      "source": "node_training_config_1",
+      "target": "node_training_1",
+      "sourcePort": "out-config",
+      "targetPort": "in-training-config",
+      "dataType": "config"
+    },
+    {
+      "id": "conn_7",
+      "source": "node_lora_1",
+      "target": "node_training_1",
+      "sourcePort": "out-config",
+      "targetPort": "in-lora-config",
+      "dataType": "config"
+    },
+    {
+      "id": "conn_8",
+      "source": "node_training_1",
+      "target": "node_saver_1",
+      "sourcePort": "out-trained-model",
+      "targetPort": "in-model",
+      "dataType": "model"
+    },
+    {
+      "id": "conn_9",
+      "source": "device-selector-1762596732655-btmqygcan",
+      "target": "node_training_1",
+      "sourcePort": "out-device",
+      "targetPort": "in-device",
+      "dataType": "config"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "id": "hf-model-downloader",
+  "name": "HF Model Downloader",
+  "icon": "🤗",
+  "category": "input",
+  "description": "HuggingFace Hub에서 모델을 다운로드합니다",
+  "color": "from-blue-500 to-blue-600",
+  "inputs": [
+    {
+      "id": "in-token",
+      "name": "Token",
+      "type": "input",
+      "dataType": "token",
+      "optional": false,
+      "visible": "always"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-model",
+      "name": "Model",
+      "type": "output",
+      "dataType": "model"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "modelId",
+      "name": "Model ID",
+      "type": "text",
+      "label": "모델 ID",
+      "value": "",
+      "placeholder": "google/gemma-3-1b-it",
+      "required": true,
+      "description": "HuggingFace Hub의 모델 ID를 입력하세요"
+    }
+  ]
+}
+

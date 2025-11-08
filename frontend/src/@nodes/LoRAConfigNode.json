@@ -1,0 +1,116 @@
+{
+  "id": "lora-config",
+  "name": "LoRA Config",
+  "icon": "🎯",
+  "category": "config",
+  "description": "LoRA (Low-Rank Adaptation) 설정을 구성합니다",
+  "color": "from-indigo-500 to-indigo-600",
+  "inputs": [],
+  "outputs": [
+    {
+      "id": "out-config",
+      "name": "LoRA Config",
+      "type": "output",
+      "dataType": "config"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "rank",
+      "name": "Rank",
+      "type": "number",
+      "label": "Rank (r)",
+      "value": 8,
+      "min": 1,
+      "max": 128,
+      "step": 1,
+      "required": true,
+      "description": "LoRA의 rank 값 (낮을수록 파라미터 적음)"
+    },
+    {
+      "id": "alpha",
+      "name": "Alpha",
+      "type": "number",
+      "label": "Alpha (α)",
+      "value": 16,
+      "min": 1,
+      "max": 256,
+      "step": 1,
+      "required": true,
+      "description": "LoRA 스케일링 파라미터 (보통 rank의 2배)"
+    },
+    {
+      "id": "dropout",
+      "name": "Dropout",
+      "type": "number",
+      "label": "Dropout",
+      "value": 0.1,
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "required": true,
+      "description": "LoRA 레이어의 드롭아웃 비율"
+    },
+    {
+      "id": "targetModules",
+      "name": "Target Modules",
+      "type": "text",
+      "label": "대상 모듈",
+      "value": "q_proj,v_proj",
+      "placeholder": "q_proj,v_proj,k_proj,o_proj",
+      "required": true,
+      "description": "LoRA를 적용할 모듈 (쉼표로 구분)"
+    },
+    {
+      "id": "bias",
+      "name": "Bias",
+      "type": "select",
+      "label": "Bias 처리",
+      "value": "none",
+      "options": [
+        {
+          "label": "Bias 학습 안 함",
+          "value": "none"
+        },
+        {
+          "label": "모든 Bias 학습",
+          "value": "all"
+        },
+        {
+          "label": "LoRA Bias만 학습",
+          "value": "lora_only"
+        }
+      ],
+      "required": true,
+      "description": "Bias 파라미터 학습 방식"
+    },
+    {
+      "id": "taskType",
+      "name": "Task Type",
+      "type": "select",
+      "label": "작업 타입",
+      "value": "CAUSAL_LM",
+      "options": [
+        {
+          "label": "Causal LM (생성)",
+          "value": "CAUSAL_LM"
+        },
+        {
+          "label": "Seq2Seq LM (번역/요약)",
+          "value": "SEQ_2_SEQ_LM"
+        },
+        {
+          "label": "Sequence Classification",
+          "value": "SEQ_CLS"
+        },
+        {
+          "label": "Token Classification",
+          "value": "TOKEN_CLS"
+        }
+      ],
+      "required": true,
+      "description": "학습할 작업 타입"
+    }
+  ]
+}
+

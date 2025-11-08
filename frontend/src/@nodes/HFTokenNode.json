@@ -1,0 +1,101 @@
+{
+  "id": "hf-token",
+  "name": "HuggingFace Token",
+  "icon": "🔑",
+  "category": "config",
+  "description": "HuggingFace API 토큰 설정 (모델 및 데이터셋 다운로드에 필요)",
+  "color": "from-yellow-500 to-yellow-600",
+  "inputs": [],
+  "outputs": [
+    {
+      "id": "out-token",
+      "name": "Token",
+      "type": "output",
+      "dataType": "token",
+      "visible": "has-token"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "tokenType",
+      "name": "Token Type",
+      "type": "select",
+      "label": "토큰 종류",
+      "value": "user",
+      "options": [
+        {
+          "label": "👤 User Token (일반 사용자 토큰)",
+          "value": "user"
+        },
+        {
+          "label": "🤖 Fine-grained Token (세밀한 권한)",
+          "value": "fine-grained"
+        }
+      ],
+      "required": true,
+      "description": "사용할 토큰의 종류를 선택하세요"
+    },
+    {
+      "id": "token",
+      "name": "Token",
+      "type": "password",
+      "label": "HuggingFace Token",
+      "value": "",
+      "placeholder": "hf_로 시작하는 토큰을 입력하세요",
+      "required": true,
+      "description": "https://huggingface.co/settings/tokens 에서 발급받으세요"
+    },
+    {
+      "id": "tokenName",
+      "name": "Token Name",
+      "type": "text",
+      "label": "토큰 이름 (선택)",
+      "value": "My Token",
+      "placeholder": "이 토큰의 이름 (예: 개인용, 학습용)",
+      "required": false,
+      "description": "워크플로우에서 구분하기 위한 이름입니다"
+    },
+    {
+      "id": "permissions",
+      "name": "Permissions",
+      "type": "select",
+      "label": "필요한 권한",
+      "value": "read",
+      "options": [
+        {
+          "label": "📖 Read (읽기만 - 다운로드용)",
+          "value": "read"
+        },
+        {
+          "label": "✍️ Write (쓰기 - 업로드용)",
+          "value": "write"
+        },
+        {
+          "label": "🔐 Admin (관리자 - 모든 권한)",
+          "value": "admin"
+        }
+      ],
+      "required": false,
+      "description": "토큰이 가진 권한 수준입니다"
+    },
+    {
+      "id": "saveAsDefault",
+      "name": "Save As Default",
+      "type": "checkbox",
+      "label": "기본 토큰으로 저장",
+      "value": false,
+      "required": false,
+      "description": "이 토큰을 기본 토큰으로 설정하면 다른 노드에서 자동으로 사용됩니다"
+    },
+    {
+      "id": "tokenInput",
+      "name": "Token Input",
+      "type": "password",
+      "label": "토큰 입력",
+      "value": "",
+      "placeholder": "hf_로 시작하는 토큰을 여기에 입력하세요",
+      "required": false,
+      "description": "직접 토큰을 입력하거나 노드 연결을 통해 받을 수 있습니다"
+    }
+  ]
+}

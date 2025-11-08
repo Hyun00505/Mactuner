@@ -1,0 +1,96 @@
+{
+  "id": "dataset-splitter",
+  "name": "Dataset Splitter",
+  "icon": "✂️",
+  "category": "process",
+  "description": "데이터셋을 Train/Validation/Test 세트로 분할합니다",
+  "color": "from-purple-500 to-purple-600",
+  "inputs": [
+    {
+      "id": "in-dataset",
+      "name": "Dataset",
+      "type": "input",
+      "dataType": "dataset",
+      "optional": false
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-train",
+      "name": "Train Dataset",
+      "type": "output",
+      "dataType": "dataset"
+    },
+    {
+      "id": "out-val",
+      "name": "Validation Dataset",
+      "type": "output",
+      "dataType": "dataset"
+    },
+    {
+      "id": "out-test",
+      "name": "Test Dataset",
+      "type": "output",
+      "dataType": "dataset"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "trainRatio",
+      "name": "Train Ratio",
+      "type": "number",
+      "label": "학습 데이터 비율 (%)",
+      "value": 80,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "required": true,
+      "description": "학습 데이터셋의 비율"
+    },
+    {
+      "id": "valRatio",
+      "name": "Validation Ratio",
+      "type": "number",
+      "label": "검증 데이터 비율 (%)",
+      "value": 10,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "required": true,
+      "description": "검증 데이터셋의 비율"
+    },
+    {
+      "id": "testRatio",
+      "name": "Test Ratio",
+      "type": "number",
+      "label": "테스트 데이터 비율 (%)",
+      "value": 10,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "required": true,
+      "description": "테스트 데이터셋의 비율"
+    },
+    {
+      "id": "shuffle",
+      "name": "Shuffle",
+      "type": "checkbox",
+      "label": "데이터 섞기",
+      "value": true,
+      "required": false,
+      "description": "분할 전에 데이터를 무작위로 섞습니다"
+    },
+    {
+      "id": "seed",
+      "name": "Seed",
+      "type": "number",
+      "label": "랜덤 시드",
+      "value": 42,
+      "min": 0,
+      "max": 999999,
+      "required": false,
+      "description": "재현 가능한 분할을 위한 랜덤 시드"
+    }
+  ]
+}
+

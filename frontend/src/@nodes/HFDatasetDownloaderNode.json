@@ -1,0 +1,39 @@
+{
+  "id": "hf-dataset-downloader",
+  "name": "HF Dataset Downloader",
+  "icon": "🤗",
+  "category": "input",
+  "description": "HuggingFace Hub에서 데이터셋을 다운로드합니다",
+  "color": "from-green-500 to-green-600",
+  "inputs": [
+    {
+      "id": "in-token",
+      "name": "Token",
+      "type": "input",
+      "dataType": "token",
+      "optional": false,
+      "visible": "always"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-dataset",
+      "name": "Dataset",
+      "type": "output",
+      "dataType": "dataset"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "datasetId",
+      "name": "Dataset ID",
+      "type": "text",
+      "label": "데이터셋 ID",
+      "value": "",
+      "placeholder": "wikitext",
+      "required": true,
+      "description": "HuggingFace Hub의 데이터셋 ID를 입력하세요"
+    }
+  ]
+}
+

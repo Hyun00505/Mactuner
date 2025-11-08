@@ -1,0 +1,88 @@
+{
+  "id": "gguf-export",
+  "name": "GGUF Export",
+  "icon": "📦",
+  "category": "output",
+  "description": "모델을 GGUF 형식으로 양자화하여 내보냅니다",
+  "color": "from-green-500 to-green-600",
+  "inputs": [
+    {
+      "id": "in-model",
+      "name": "Model",
+      "type": "input",
+      "dataType": "model",
+      "optional": false
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-gguf",
+      "name": "GGUF File",
+      "type": "output",
+      "dataType": "any"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "quantizationMethod",
+      "name": "Quantization Method",
+      "type": "select",
+      "label": "양자화 방법",
+      "value": "Q4_K",
+      "options": [
+        {
+          "label": "Q2_K (가장 작음, 낮은 품질)",
+          "value": "Q2_K"
+        },
+        {
+          "label": "Q3_K (작음, 중간 품질)",
+          "value": "Q3_K"
+        },
+        {
+          "label": "Q4_0 (중간, 좋은 품질)",
+          "value": "Q4_0"
+        },
+        {
+          "label": "Q4_K (권장, 좋은 품질)",
+          "value": "Q4_K"
+        },
+        {
+          "label": "Q5_0 (큼, 매우 좋은 품질)",
+          "value": "Q5_0"
+        },
+        {
+          "label": "Q5_K (큼, 매우 좋은 품질)",
+          "value": "Q5_K"
+        },
+        {
+          "label": "Q6_K (매우 큼, 우수한 품질)",
+          "value": "Q6_K"
+        },
+        {
+          "label": "Q8_0 (매우 큼, 최고 품질)",
+          "value": "Q8_0"
+        },
+        {
+          "label": "F16 (반정밀도)",
+          "value": "F16"
+        },
+        {
+          "label": "F32 (전체 정밀도)",
+          "value": "F32"
+        }
+      ],
+      "required": true,
+      "description": "GGUF 양자화 방법 선택"
+    },
+    {
+      "id": "outputPath",
+      "name": "Output Path",
+      "type": "text",
+      "label": "출력 경로",
+      "value": "./output/model.gguf",
+      "required": true,
+      "description": "GGUF 파일을 저장할 경로"
+    }
+  ]
+}
+

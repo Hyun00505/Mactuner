@@ -1,0 +1,78 @@
+{
+  "id": "model-saver",
+  "name": "Model Saver",
+  "icon": "💿",
+  "category": "output",
+  "description": "학습된 모델을 저장합니다",
+  "color": "from-green-500 to-green-600",
+  "inputs": [
+    {
+      "id": "in-model",
+      "name": "Model",
+      "type": "input",
+      "dataType": "model",
+      "optional": false
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-path",
+      "name": "Saved Model Path",
+      "type": "output",
+      "dataType": "config"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "savePath",
+      "name": "Save Path",
+      "type": "text",
+      "label": "저장 경로",
+      "value": "./saved_models",
+      "required": true,
+      "description": "모델을 저장할 경로"
+    },
+    {
+      "id": "saveFormat",
+      "name": "Save Format",
+      "type": "select",
+      "label": "저장 형식",
+      "value": "both",
+      "options": [
+        {
+          "label": "PyTorch (.bin)",
+          "value": "pytorch"
+        },
+        {
+          "label": "SafeTensors (.safetensors)",
+          "value": "safetensors"
+        },
+        {
+          "label": "둘 다",
+          "value": "both"
+        }
+      ],
+      "required": true,
+      "description": "모델 저장 형식"
+    },
+    {
+      "id": "includeTokenizer",
+      "name": "Include Tokenizer",
+      "type": "checkbox",
+      "label": "토크나이저 포함",
+      "value": true,
+      "required": false,
+      "description": "토크나이저 파일도 함께 저장"
+    },
+    {
+      "id": "includeConfig",
+      "name": "Include Config",
+      "type": "checkbox",
+      "label": "설정 파일 포함",
+      "value": true,
+      "required": false,
+      "description": "모델 설정 파일도 함께 저장"
+    }
+  ]
+}
+

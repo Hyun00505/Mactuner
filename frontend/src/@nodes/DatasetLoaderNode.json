@@ -1,0 +1,237 @@
+{
+  "id": "dataset-loader",
+  "name": "Dataset Loader",
+  "icon": "📊",
+  "category": "input",
+  "description": "데이터셋을 업로드하거나 로드하여 학습에 사용합니다",
+  "color": "from-green-500 to-green-600",
+  "inputs": [
+    {
+      "id": "in-token",
+      "name": "Token",
+      "type": "input",
+      "dataType": "token",
+      "optional": true,
+      "visible": "download"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-dataset",
+      "name": "Dataset",
+      "type": "output",
+      "dataType": "dataset"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "source",
+      "name": "Source",
+      "type": "select",
+      "label": "데이터셋 소스",
+      "value": "local",
+      "options": [
+        {
+          "label": "📂 로컬 저장소 (기존 데이터셋)",
+          "value": "local"
+        },
+        {
+          "label": "🤗 HuggingFace 데이터셋",
+          "value": "huggingface"
+        },
+        {
+          "label": "📤 파일 업로드",
+          "value": "upload"
+        }
+      ],
+      "required": true,
+      "description": "데이터셋을 어디에서 로드할지 선택하세요"
+    },
+    {
+      "id": "localDataset",
+      "name": "Local Dataset",
+      "type": "select",
+      "label": "데이터셋 선택",
+      "value": "",
+      "placeholder": "로컬 데이터셋을 선택하세요",
+      "required": true,
+      "description": "컴퓨터에 저장된 데이터셋 목록에서 선택하세요 (자동 감지됨)",
+      "dynamicOptions": true,
+      "apiEndpoint": "/dataset/local-datasets",
+      "condition": {
+        "parameter": "source",
+        "operator": "equals",
+        "value": "local"
+      }
+    },
+    {
+      "id": "dataFormat",
+      "name": "Data Format",
+      "type": "select",
+      "label": "파일 형식",
+      "value": "csv",
+      "options": [
+        {
+          "label": "CSV",
+          "value": "csv"
+        },
+        {
+          "label": "JSON",
+          "value": "json"
+        },
+        {
+          "label": "Parquet",
+          "value": "parquet"
+        },
+        {
+          "label": "JSONL",
+          "value": "jsonl"
+        }
+      ],
+      "required": true,
+      "description": "데이터 파일 형식",
+      "condition": {
+        "parameter": "source",
+        "operator": "equals",
+        "value": "upload"
+      }
+    },
+    {
+      "id": "filePath",
+      "name": "File Path",
+      "type": "file",
+      "label": "파일 업로드",
+      "value": "",
+      "placeholder": "업로드할 파일을 선택하세요",
+      "required": true,
+      "description": "데이터셋 파일을 업로드하세요",
+      "condition": {
+        "parameter": "source",
+        "operator": "equals",
+        "value": "upload"
+      }
+    },
+    {
+      "id": "datasetId",
+      "name": "Dataset ID",
+      "type": "text",
+      "label": "데이터셋 ID",
+      "value": "",
+      "placeholder": "예: wikitext, open_webtext",
+      "required": true,
+      "description": "HuggingFace 데이터셋 ID를 입력하세요",
+      "condition": {
+        "parameter": "source",
+        "operator": "equals",
+        "value": "huggingface"
+      }
+    },
+    {
+      "id": "split",
+      "name": "Split",
+      "type": "text",
+      "label": "Dataset Split",
+      "value": "train",
+      "placeholder": "e.g., train, validation, test",
+      "required": false,
+      "description": "Which split to load",
+      "condition": {
+        "parameter": "source",
+        "operator": "equals",
+        "value": "huggingface"
+      }
+    },
+    {
+      "id": "maxSamples",
+      "name": "Max Samples",
+      "type": "number",
+      "label": "Maximum Samples",
+      "value": -1,
+      "min": -1,
+      "max": 1000000,
+      "step": 1,
+      "required": false,
+      "description": "Limit number of samples (-1 for all)"
+    },
+    {
+      "id": "textColumn",
+      "name": "Text Column",
+      "type": "text",
+      "label": "Text Column Name",
+      "value": "text",
+      "placeholder": "e.g., text, content, description",
+      "required": true,
+      "description": "Column name containing the text data"
+    },
+    {
+      "id": "labelColumn",
+      "name": "Label Column",
+      "type": "text",
+      "label": "Label Column Name",
+      "value": "",
+      "placeholder": "e.g., label, target (optional)",
+      "required": false,
+      "description": "Column name for labels (if classification)"
+    },
+    {
+      "id": "testSize",
+      "name": "Test Size",
+      "type": "number",
+      "label": "Test Split Ratio",
+      "value": 0.1,
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "required": false,
+      "description": "Ratio of data to use for testing (0.0-1.0)"
+    },
+    {
+      "id": "randomSeed",
+      "name": "Random Seed",
+      "type": "number",
+      "label": "Random Seed",
+      "value": 42,
+      "min": 0,
+      "max": 1000000,
+      "step": 1,
+      "required": false,
+      "description": "Random seed for reproducibility"
+    },
+    {
+      "id": "encoding",
+      "name": "Encoding",
+      "type": "select",
+      "label": "File Encoding",
+      "value": "utf-8",
+      "options": [
+        {
+          "label": "UTF-8",
+          "value": "utf-8"
+        },
+        {
+          "label": "UTF-16",
+          "value": "utf-16"
+        },
+        {
+          "label": "Latin-1",
+          "value": "latin-1"
+        }
+      ],
+      "required": false,
+      "description": "Text encoding for file reading"
+    },
+    {
+      "id": "skipRows",
+      "name": "Skip Rows",
+      "type": "number",
+      "label": "Skip First N Rows",
+      "value": 0,
+      "min": 0,
+      "max": 10000,
+      "step": 1,
+      "required": false,
+      "description": "Number of rows to skip from the beginning"
+    }
+  ]
+}
+

@@ -1,6 +1,20 @@
 [
   {
     "id": 5,
+    "source": "hf",
+    "filename": "korean-laws.parquet",
+    "rows": 5502,
+    "columns": 4,
+    "size_mb": 0.0,
+    "format": "HuggingFace Dataset",
+    "timestamp": "2025-11-08T22:38:20.399821",
+    "hf_dataset_id": "kihoonlee/korean-laws",
+    "hf_token": "",
+    "hf_split": "train",
+    "encoding": "utf-8"
+  },
+  {
+    "id": 5,
     "source": "file",
     "filename": "test.csv",
     "rows": 3887,

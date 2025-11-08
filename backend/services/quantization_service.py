@@ -12,6 +12,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from backend.config import settings
 from backend.utils.mac_optimization import MACOptimizer
+from backend.services.device_manager import get_device_manager
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,9 @@ class QuantizationService:
     }
 
     def __init__(self):
-        self.device = MACOptimizer.get_device()
+        # 선택된 디바이스 또는 기본값 사용
+        self.device_manager = get_device_manager()
+        self.device = self.device_manager.get_current_device()
         self.conversion_history: List[Dict[str, Any]] = []
 
     # ========================================

@@ -1,0 +1,74 @@
+{
+  "id": "rag",
+  "name": "RAG",
+  "icon": "🔍",
+  "category": "utility",
+  "description": "Retrieval-Augmented Generation을 사용하여 문서 검색 및 생성",
+  "color": "from-purple-500 to-purple-600",
+  "inputs": [
+    {
+      "id": "in-model",
+      "name": "Model",
+      "type": "input",
+      "dataType": "model",
+      "optional": false
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-results",
+      "name": "Search Results",
+      "type": "output",
+      "dataType": "text"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "documentPaths",
+      "name": "Document Paths",
+      "type": "text",
+      "label": "문서 경로",
+      "value": "",
+      "placeholder": "문서 경로를 쉼표로 구분하여 입력",
+      "required": false,
+      "description": "검색할 문서들의 경로"
+    },
+    {
+      "id": "chunkSize",
+      "name": "Chunk Size",
+      "type": "number",
+      "label": "청크 크기",
+      "value": 512,
+      "min": 64,
+      "max": 2048,
+      "step": 64,
+      "required": true,
+      "description": "문서를 나눌 청크 크기"
+    },
+    {
+      "id": "chunkOverlap",
+      "name": "Chunk Overlap",
+      "type": "number",
+      "label": "청크 겹침",
+      "value": 50,
+      "min": 0,
+      "max": 500,
+      "step": 10,
+      "required": true,
+      "description": "청크 간 겹치는 토큰 수"
+    },
+    {
+      "id": "topK",
+      "name": "Top K",
+      "type": "number",
+      "label": "Top K",
+      "value": 5,
+      "min": 1,
+      "max": 20,
+      "step": 1,
+      "required": true,
+      "description": "검색 결과 상위 K개"
+    }
+  ]
+}
+

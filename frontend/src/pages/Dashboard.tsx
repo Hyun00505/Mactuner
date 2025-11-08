@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import DeviceSelector from "../components/DeviceSelector";
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -69,6 +70,11 @@ export const Dashboard: React.FC = () => {
             LLM 파인튜닝을 위한 완벽한 플랫폼에 오신 것을 환영합니다
           </p>
         </div>
+
+        {/* 디바이스 선택 섹션 */}
+        <section className="mb-12">
+          <DeviceSelector />
+        </section>
 
         {/* 최근 워크플로우 */}
         <section className="mb-12">

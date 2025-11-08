@@ -1,0 +1,136 @@
+{
+  "id": "qlora-config",
+  "name": "QLoRA Config",
+  "icon": "⚡",
+  "category": "config",
+  "description": "QLoRA (Quantized LoRA) 설정을 구성합니다",
+  "color": "from-indigo-500 to-indigo-600",
+  "inputs": [],
+  "outputs": [
+    {
+      "id": "out-config",
+      "name": "QLoRA Config",
+      "type": "output",
+      "dataType": "config"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "bits",
+      "name": "Bits",
+      "type": "select",
+      "label": "양자화 비트",
+      "value": 4,
+      "options": [
+        {
+          "label": "4-bit (권장)",
+          "value": 4
+        },
+        {
+          "label": "8-bit",
+          "value": 8
+        }
+      ],
+      "required": true,
+      "description": "양자화 비트 수"
+    },
+    {
+      "id": "quantType",
+      "name": "Quantization Type",
+      "type": "select",
+      "label": "양자화 타입",
+      "value": "nf4",
+      "options": [
+        {
+          "label": "NF4 (NormalFloat4)",
+          "value": "nf4"
+        },
+        {
+          "label": "FP4 (FloatPoint4)",
+          "value": "fp4"
+        }
+      ],
+      "required": true,
+      "description": "양자화 방식"
+    },
+    {
+      "id": "doubleQuant",
+      "name": "Double Quantization",
+      "type": "checkbox",
+      "label": "이중 양자화",
+      "value": true,
+      "required": false,
+      "description": "추가 메모리 절약 (권장)"
+    },
+    {
+      "id": "computeDtype",
+      "name": "Compute Dtype",
+      "type": "select",
+      "label": "계산 데이터 타입",
+      "value": "float16",
+      "options": [
+        {
+          "label": "Float16",
+          "value": "float16"
+        },
+        {
+          "label": "BFloat16",
+          "value": "bfloat16"
+        },
+        {
+          "label": "Float32",
+          "value": "float32"
+        }
+      ],
+      "required": true,
+      "description": "계산에 사용할 데이터 타입"
+    },
+    {
+      "id": "loraRank",
+      "name": "LoRA Rank",
+      "type": "number",
+      "label": "LoRA Rank (r)",
+      "value": 64,
+      "min": 1,
+      "max": 256,
+      "step": 1,
+      "required": true,
+      "description": "LoRA의 rank 값"
+    },
+    {
+      "id": "loraAlpha",
+      "name": "LoRA Alpha",
+      "type": "number",
+      "label": "LoRA Alpha (α)",
+      "value": 16,
+      "min": 1,
+      "max": 256,
+      "step": 1,
+      "required": true,
+      "description": "LoRA 스케일링 파라미터"
+    },
+    {
+      "id": "loraDropout",
+      "name": "LoRA Dropout",
+      "type": "number",
+      "label": "LoRA Dropout",
+      "value": 0.1,
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "required": true,
+      "description": "LoRA 레이어의 드롭아웃 비율"
+    },
+    {
+      "id": "targetModules",
+      "name": "Target Modules",
+      "type": "text",
+      "label": "대상 모듈",
+      "value": "q_proj,v_proj",
+      "placeholder": "q_proj,v_proj,k_proj,o_proj",
+      "required": true,
+      "description": "LoRA를 적용할 모듈 (쉼표로 구분)"
+    }
+  ]
+}
+

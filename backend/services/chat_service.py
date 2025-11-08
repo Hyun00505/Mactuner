@@ -6,6 +6,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from backend.utils.mac_optimization import MACOptimizer
+from backend.services.device_manager import get_device_manager
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,9 @@ class ChatService:
         self.model: Optional[AutoModelForCausalLM] = None
         self.tokenizer: Optional[AutoTokenizer] = None
         self.conversation_history: List[Message] = []
-        self.device = MACOptimizer.get_device()
+        # 선택된 디바이스 또는 기본값 사용
+        self.device_manager = get_device_manager()
+        self.device = self.device_manager.get_current_device()
         self.system_prompt = "You are a helpful AI assistant."
 
     # ========================================
