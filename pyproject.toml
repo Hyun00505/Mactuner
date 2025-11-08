@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "MAC 환경 최적화 LLM 파인튜닝 & 배포 플랫폼"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = {text = "Apache-2.0"}
 authors = [
     {name = "Bun Hyun Bin", email = "bunhine0452@gmail.com"}
 ]
@@ -16,7 +16,7 @@ keywords = ["llm", "fine-tuning", "lora", "rag", "gguf", "mac", "m1", "m2"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: MacOS",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
