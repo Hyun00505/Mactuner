@@ -48,44 +48,52 @@ Mac의 제한된 리소스를 최대한 활용하기 위해 다음과 같은 최
 ## 🌟 주요 기능
 
 ### 1️⃣ **대시보드** (Dashboard)
+
 - 하드웨어 정보 표시 (MPS, CPU, CUDA)
 - 설치된 데이터셋 현황
 - 최근 워크플로우 목록
 - 빠른 접근 패널
 
 ### 2️⃣ **모델 다운로드** (Model Download)
+
 - HuggingFace에서 모델 자동 다운로드
 - GPU/CPU 선택 가능
 - 다운로드 진행 상황 실시간 추적
 
 ### 3️⃣ **데이터 처리** (Data Processing)
+
 - CSV 파일 업로드 및 EDA
 - HuggingFace 데이터셋 통합
 - 데이터 전처리 및 검증
 - 그리드 뷰 데이터 탐색
 
 ### 4️⃣ **LoRA 학습** (Training)
+
 - LoRA/QLoRA 파인튜닝
 - 학습률, 배치 크기 등 하이퍼파라미터 조정
 - 체크포인트 저장 및 복구
 - 실시간 손실값 모니터링
 
 ### 5️⃣ **GGUF 내보내기** (Export GGUF)
+
 - 학습된 모델을 GGUF 형식으로 변환
 - 양자화 레벨 선택 (Q4, Q5, Q8)
 - 메타데이터 포함
 
 ### 6️⃣ **RAG 파이프라인** (RAG)
+
 - PDF 문서 임베딩
 - 의미론적 검색
 - 맥락 기반 답변 생성
 
 ### 7️⃣ **Chat Interface** (Chat)
+
 - 로컬 모델과의 대화
 - 여러 모델 선택 가능
 - 대화 히스토리 관리
 
 ### 8️⃣ **Workflow Editor** (워크플로우 에디터)
+
 - 노드 기반 파이프라인 구성
 - 드래그 앤 드롭 인터페이스
 - 복잡한 워크플로우 자동화
@@ -95,16 +103,19 @@ Mac의 제한된 리소스를 최대한 활용하기 위해 다음과 같은 최
 ## 📸 스크린샷
 
 ### Dashboard
-![Dashboard](./snapshot_Image/스크린샷%202025-11-09%2001.02.23.png)
-*MACtuner 메인 대시보드 - 하드웨어 정보, 데이터셋, 워크플로우 관리*
+
+![Dashboard](./snapshot_Image/main_page.png)
+_MACtuner 메인 대시보드 - 하드웨어 정보, 데이터셋, 워크플로우 관리_
 
 ### Chat Interface
-![Chat Interface](./snapshot_Image/스크린샷%202025-11-09%2001.03.11.png)
-*LLM 채팅 인터페이스 - 다양한 모델 선택 및 실시간 대화*
+
+![Chat Interface](./snapshot_Image/chat.png)
+_LLM 채팅 인터페이스 - 다양한 모델 선택 및 실시간 대화_
 
 ### Workflow Editor
-![Workflow Editor](./snapshot_Image/스크린샷%202025-11-09%2001.04.21.png)
-*고급 워크플로우 에디터 - 노드 기반 파이프라인 구성 및 실행*
+
+![Workflow Editor](./snapshot_Image/work_flow.png)
+_고급 워크플로우 에디터 - 노드 기반 파이프라인 구성 및 실행_
 
 ---
 
@@ -127,6 +138,7 @@ cd Mactuner
 ### 2. 백엔드 환경 설정
 
 #### 옵션 A: UV 사용 (권장)
+
 ```bash
 # uv 설치 (처음 한 번만)
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -136,6 +148,7 @@ uv sync
 ```
 
 #### 옵션 B: pip 사용
+
 ```bash
 # 가상 환경 생성
 python3.11 -m venv venv
@@ -168,6 +181,7 @@ nano .env
 ```
 
 필요한 환경 변수:
+
 ```env
 # HuggingFace
 HF_TOKEN=your_huggingface_token_here
@@ -430,6 +444,7 @@ uv run pytest --cov=backend --cov-report=html
 ### 문제: `ImportError: No module named 'llama_cpp'`
 
 **해결책**: llama-cpp-python은 시스템 환경에 따라 설치가 복잡할 수 있습니다.
+
 ```bash
 # 사전 컴파일된 바이너리 사용
 pip install llama-cpp-python --only-binary :all:
@@ -441,6 +456,7 @@ conda install -c conda-forge llama-cpp-python
 ### 문제: Mac에서 PyTorch 느린 성능
 
 **해결책**: MPS 가속화 활성화 확인
+
 ```python
 import torch
 print(torch.backends.mps.is_available())  # True여야 함
@@ -449,6 +465,7 @@ print(torch.backends.mps.is_available())  # True여야 함
 ### 문제: 메모리 부족 (Out of Memory)
 
 **해결책**: 배치 크기 감소 또는 QLoRA 사용
+
 ```python
 # 학습 설정
 batch_size = 2  # 4에서 감소
@@ -464,26 +481,31 @@ use_qlora = True  # 4-bit 양자화 활성화
 ### 기여 절차
 
 1. **저장소 포크**
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/Mactuner.git
    ```
 
 2. **기능 브랜치 생성**
+
    ```bash
    git checkout -b feature/amazing-feature
    ```
 
 3. **코드 수정**
+
    - 코드 스타일 준수 (Black, Ruff)
    - 타입 힌트 추가
    - 문서화
 
 4. **테스트 작성 및 실행**
+
    ```bash
    uv run pytest
    ```
 
 5. **커밋 및 푸시**
+
    ```bash
    git add .
    git commit -m "feat: 멋진 기능 추가"
@@ -561,4 +583,3 @@ use_qlora = True  # 4-bit 양자화 활성화
 [⭐ Star 주기](https://github.com/Hyun00505/Mactuner) | [🐛 이슈 제보](https://github.com/Hyun00505/Mactuner/issues) | [💬 토론](https://github.com/Hyun00505/Mactuner/discussions)
 
 </div>
-
