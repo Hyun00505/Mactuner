@@ -3,7 +3,7 @@
 **Mac 환경 최적화 LLM 파인튜닝 & 배포 플랫폼**
 
 [![Python Version](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI Version](https://img.shields.io/badge/Version-0.1.0-brightgreen.svg)](https://pypi.org/)
 [![Status](https://img.shields.io/badge/Status-Alpha-orange.svg)](#)
 
@@ -213,6 +213,7 @@ python app.py
 ```
 
 이 명령으로 다음이 자동으로 시작됩니다:
+
 - 🌐 프론트엔드 웹 UI: http://localhost:3000
 - 🔌 백엔드 API: http://localhost:8001
 - 📚 Swagger API 문서: http://localhost:8001/docs
@@ -597,7 +598,27 @@ use_qlora = True  # 4-bit 양자화 활성화
 
 ## 📄 라이선스
 
-이 프로젝트는 **MIT 라이선스**를 따릅니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+이 프로젝트는 **Apache License 2.0** 을 따릅니다. 
+
+### 주요 권리와 의무
+
+**✅ 허용되는 것:**
+- 상업적 사용
+- 수정
+- 배포
+- 개인적 사용
+- 특허 사용
+
+**📋 조건:**
+- 라이선스 및 저작권 고지 포함
+- 주요 변경사항 명시
+- NOTICE 파일 포함
+
+**❌ 제한:**
+- 상표 사용 불가
+- 책임 회피 불가
+
+자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 ---
 
