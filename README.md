@@ -199,36 +199,73 @@ FRONTEND_PORT=5173
 
 ## 🎮 빠른 시작
 
-### 1. 백엔드 서버 실행
+### 옵션 1: 전체 통합 실행 (권장) 🌟
+
+한 번의 명령으로 백엔드 + 프론트엔드를 모두 실행합니다:
 
 ```bash
-# uv 사용 시
-uv run python -m backend.main
+# 모든 필수 패키지 설치 (처음 한 번만)
+cd frontend && npm install && cd ..
+pip install -r backend/requirements.txt
 
-# 또는 활성화된 venv에서
-python -m backend.main
+# 통합 실행
+python app.py
 ```
 
-서버는 `http://localhost:8000`에서 실행됩니다.
+이 명령으로 다음이 자동으로 시작됩니다:
+- 🌐 프론트엔드 웹 UI: http://localhost:3000
+- 🔌 백엔드 API: http://localhost:8001
+- 📚 Swagger API 문서: http://localhost:8001/docs
 
-### 2. 프론트엔드 개발 서버 실행
+---
+
+### 옵션 2: 백엔드만 실행
+
+```bash
+# FastAPI 백엔드만 실행
+python -m uvicorn backend.main:app --reload --port 8001
+```
+
+- 🔌 API: http://localhost:8001
+- 📚 API 문서: http://localhost:8001/docs
+- ✅ Postman, curl 등으로 API 테스트 가능
+
+---
+
+### 옵션 3: 프론트엔드 개발 서버
 
 ```bash
 cd frontend
 
-# 개발 서버 시작
+# 개발 서버 시작 (포트 5173)
 npm run dev
 
-# 또는 Electron 앱으로 실행 (Mac 네이티브 앱)
+# 또는 Electron 데스크톱 앱으로 실행 (Mac 네이티브)
 npm run dev:electron
+
+# 또는 프로덕션 빌드
+npm run build
+npm run preview
 ```
 
-프론트엔드는 `http://localhost:5173`에서 실행됩니다.
+---
 
-### 3. 웹 브라우저에서 접속
+### 옵션 4: Python CLI만 사용
 
-```
-http://localhost:5173
+npm/프론트엔드 없이 Python CLI로만 사용:
+
+```bash
+# 모델 학습
+python trainer.py
+
+# CLI 채팅 인터페이스
+python chat_interface.py
+
+# RAG 파이프라인
+python rag_pipeline.py
+
+# 데이터 분석
+python data_eda.py
 ```
 
 ---
